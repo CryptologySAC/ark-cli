@@ -1,8 +1,9 @@
 "use strict";
 
-var arkjs = require("arkjs");
-var arkjsnetworks = require("arkjs/lib/networks.js");
-var request = require('request-promise-native');
+const arkjs = require('arkjs');
+const toolbox = require('./utils.js');
+const arkjsnetworks = require('arkjs/lib/networks.js');
+const request = require('request-promise-native');
 
 var ARKNetwork = ()=>{};
     
@@ -13,7 +14,7 @@ ARKNetwork.getFromNodeV1 = (options) => {
        
         body = JSON.parse(body);
         if ( !body.hasOwnProperty('success') || body.success === false) {
-            return Promise.reject("Failed: " + body.error);
+            return Promise.reject('Failed: ' + body.error);
         } 
         return Promise.resolve(body);
         
@@ -23,6 +24,18 @@ ARKNetwork.getFromNodeV1 = (options) => {
 };
 
 ARKNetwork.connect = (network, verbose) => {
+    switch(network) {
+        case "testnet":
+        case "devnet" :
+            network = 'testnet';
+            break;
+        case "mainnet":
+        case "ark":
+            network = 'ark';
+		    break;
+        default:
+	}
+	
     let selectedNetwork = arkjsnetworks[network];
     
     if (!selectedNetwork) {
@@ -46,9 +59,9 @@ ARKNetwork.connect = (network, verbose) => {
 function findPeer(network, verbose) {
     
     let server = network.peers[Math.floor(Math.random()*1000)%network.peers.length];
-    server = server.ip + ":" + server.port;
+    server = toolbox.getNode(server);
     
-    let uri = 'http://' + server + '/api/peers';
+    let uri = server + '/api/peers';
     if(verbose){
         console.log("Trying Node: "+server);
     }
@@ -70,6 +83,7 @@ function findPeer(network, verbose) {
         sortedPeers = sortedPeers.map((peer) => {
             if (peer.status==="OK") {
                 peer.nethash = network.nethash;
+                peer.network = network;
                 if(verbose) {
                     console.log("Node found: " + peer.ip + ":" + peer.port + ", height: " + peer.height + ", delay: " + peer.delay);
                 }
@@ -84,7 +98,8 @@ function findPeer(network, verbose) {
         sortedPeers.sort((a, b) => parseInt(b.height, 10) - parseInt(a.height, 10) || parseInt(a.delay, 10) - parseInt(b.delay,10));
         
         // Test if the selected node actually works
-        let uri = "http://" + sortedPeers[0].ip + ":" + sortedPeers[0].port + "/api/peers/version";
+        let server = toolbox.getNode(sortedPeers[0]);
+        let uri = server + "/api/peers/version";
         let options = {
             uri: uri,
             headers: {

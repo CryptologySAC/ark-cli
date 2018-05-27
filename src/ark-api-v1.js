@@ -1,10 +1,10 @@
 "use strict";
-var ARKNetwork = require("./network.js");
+const ARKNetwork = require('./network.js');
+const toolbox = require('./utils.js');
 var ARKAPI = ()=>{};    
     
 const port = 1;
 const version = "1.0.0";
-const protocol = "http://";
 const timeout = 1000;
 
 /******** Account ********/
@@ -17,8 +17,10 @@ const timeout = 1000;
  * @return  Promise.resolve() with JSON account.
  */
 ARKAPI.getAccount = (address, node, verbose) => {
+    let server = toolbox.getNode(node);
     let command = "/api/accounts?address=";
-    let uri = protocol + node.ip + ":" + node.port + command + address;
+    
+    let uri = server + command + address;
     let options = {
         uri: uri,
         headers: {
@@ -56,8 +58,9 @@ ARKAPI.getAccount = (address, node, verbose) => {
  * @return  Promise.resolve() with JSON Balance.
  */
 ARKAPI.accountGetBalance = (address, node, verbose) => {
+    let server = toolbox.getNode(node);
     let command = "/api/accounts/getBalance?address=";
-    let uri = protocol + node.ip + ":" + node.port + command + address;
+    let uri = server + command + address;
     let options = {
         uri: uri,
         headers: {
@@ -96,8 +99,9 @@ ARKAPI.accountGetBalance = (address, node, verbose) => {
  * @return  Promise.resolve() with JSON Balance.
  */
 ARKAPI.accountGetPublicKey = (address, node, verbose) => {
+    let server = toolbox.getNode(node);
     let command = "/api/accounts/getPublickey?address=";
-    let uri = protocol + node.ip + ":" + node.port + command + address;
+    let uri = server + command + address;
     let options = {
         uri: uri,
         headers: {
@@ -135,8 +139,9 @@ ARKAPI.accountGetPublicKey = (address, node, verbose) => {
  * @return  Promise.resolve() with JSON Delegates.
  */
 ARKAPI.accountGetDelegates = (address, node, verbose) => {
+    let server = toolbox.getNode(node);
     let command = "/api/accounts/delegates?address=";
-    let uri = protocol + node.ip + ":" + node.port + command + address;
+    let uri = server + command + address;
     let options = {
         uri: uri,
         headers: {

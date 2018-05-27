@@ -1,7 +1,12 @@
 "use strict";
-var ARKAPI = require("./ark-api-v1.js");
+const ARKAPI = require('./ark-api-v1.js');
+const merge = require('deepmerge');
 
-var ARKCommands = ()=>{};
+var ARKCommands = ()=>{
+};
+
+ARKCommands.output = {};
+
 
 /******** Account ********/
 
@@ -19,7 +24,7 @@ ARKCommands.getAccount = (address, node, verbose) => {
     }).catch((error) => {
         return Promise.reject(error);
     });
-}  
+}; 
 
 /**
  * @dev     Get the balance of an account.
@@ -35,7 +40,7 @@ ARKCommands.accountGetBalance = (address, node, verbose) => {
     }).catch((error) => {
         return Promise.reject(error);
     });
-}  
+};
 
 /**
  * @dev     Get the public key of an account.
@@ -51,7 +56,7 @@ ARKCommands.accountGetPublicKey = (address, node, verbose) => {
     }).catch(function(error) {
         return Promise.reject(error);
     });
-} 
+};
 
 /**
  * @dev     Get the delegates of an account.
@@ -67,6 +72,63 @@ ARKCommands.accountGetDelegates = (address, node, verbose) => {
     }).catch(function(error) {
         return Promise.reject(error);
     });
-} 
+};
+
+ARKCommands.prepareGetAccount = (account, balance, key, delegates, address, node, verbose) => {
+    let commands = [];
+            
+    if(account) {
+        commands.push(new Promise((resolve, reject) => {
+            ARKCommands.getAccount(address, node, verbose)
+            .then((result) => {
+                ARKCommands.output = merge(ARKCommands.output, result);
+                resolve();
+        })
+        .catch((error) => {
+            reject(error);
+                    });
+        }));
+    }
+            
+    if(balance && !account) {
+        commands.push(new Promise((resolve, reject) => {
+            ARKCommands.accountGetBalance(address, node, verbose)
+            .then((result) => {
+                ARKCommands.output  = merge(ARKCommands.output, result);
+                resolve();
+            })
+            .catch((error) => {
+                reject(error);
+            });
+        }));
+    }
+            
+    if(key && !account) {
+        commands.push(new Promise((resolve, reject) => {
+            ARKCommands.accountGetPublicKey(address, node, verbose)
+            .then((result) => {
+                ARKCommands.output  = merge(ARKCommands.output, result);
+                resolve();
+            })
+            .catch((error) => {
+                reject(error);
+            }); 
+        }));
+    }
+            
+    if(delegates) {
+        commands.push(new Promise((resolve, reject) => {
+            ARKCommands.accountGetDelegates(address, node, verbose)
+            .then((result) => {
+                ARKCommands.output  = merge(ARKCommands.output, result);
+                resolve();
+            })
+            .catch((error) => {
+                reject(error);
+            }); 
+        }));
+    }
+    return commands;
+};
 
 module.exports = ARKCommands;
