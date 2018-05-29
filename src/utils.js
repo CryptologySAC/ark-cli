@@ -6,7 +6,7 @@ var toolbox = () => {};
 toolbox.getNode = (node) => {
     if(node) {
         let protocol = node.protocol ? node.protocol : 'http://';
-        return protocol + node.ip + ':' + node.port;
+        return `${protocol}${node.ip}:${node.port}`;
     } 
     return null;
 }
@@ -37,7 +37,7 @@ function accountData(data, node) {
     let symbol = '';
     
     if(node && node.hasOwnProperty('network')) {
-        symbol = node.network.hasOwnProperty('symbol') ?  node.network.symbol + ' ' : '';
+        symbol = node.network.hasOwnProperty('symbol') ?  `${node.network.symbol} ` : '';
     }
     
     if(data.account.hasOwnProperty('balance')) {
@@ -53,7 +53,7 @@ function accountData(data, node) {
             table.addRow(item, "" + data.account[item]);
         }
     }
-    if(data.hasOwnProperty('delegates')) {
+    if(data.hasOwnProperty('delegates' ) && data.delegates.hasOwnProperty('username')) {
         table.addRow('delegate', data.delegates[0].username);
     }
     

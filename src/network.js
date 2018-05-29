@@ -39,11 +39,11 @@ ARKNetwork.connect = (network, verbose) => {
     let selectedNetwork = arkjsnetworks[network];
     
     if (!selectedNetwork) {
-        return Promise.reject("Can't connect to " +network + ": Network not found.");
+        return Promise.reject(`Can't connect to ${network}: Network not found.`);
     }
         
     if(verbose) {
-        console.log('Connecting to '+ selectedNetwork.name);  
+        console.log(`Connecting to ${selectedNetwork.name}`);  
     }
   
     return findPeer(selectedNetwork, verbose)
@@ -61,9 +61,9 @@ function findPeer(network, verbose) {
     let server = network.peers[Math.floor(Math.random()*1000)%network.peers.length];
     server = toolbox.getNode(server);
     
-    let uri = server + '/api/peers';
+    let uri = `${server}/api/peers`;
     if(verbose){
-        console.log("Trying Node: "+server);
+        console.log(`Trying Peer: ${server}`);
     }
     
     let options = {
@@ -85,50 +85,58 @@ function findPeer(network, verbose) {
                 peer.nethash = network.nethash;
                 peer.network = network;
                 if(verbose) {
-                    console.log("Node found: " + peer.ip + ":" + peer.port + ", height: " + peer.height + ", delay: " + peer.delay);
+                    console.log(`Node found: ${peer.ip}:${peer.port}, height: ${peer.height}, delay: ${peer.delay}`);
                 }
                 return peer;
             }
         });
         
         if (sortedPeers.length === 0) {
-            return Promise.reject("Error sorting peers.");
+            return Promise.reject('Error sorting peers.');
         }
         // Sort Nodes by height and delay
         sortedPeers.sort((a, b) => parseInt(b.height, 10) - parseInt(a.height, 10) || parseInt(a.delay, 10) - parseInt(b.delay,10));
         
         // Test if the selected node actually works
-        for(let i = 0; i < sortedPeers.length; i++) {
-            let server = toolbox.getNode(sortedPeers[i]);
-            let uri = server + "/api/peers/version";
-            let options = {
-                uri: uri,
-                headers: {
-                    nethash: network.nethash,
-                    version: '1.0.0',
-                    port:1
-                },
-                timeout: 1000
-            }; 
-            return getFromNode(options)
-            .then((nodeStatus) => {
-                if(verbose) {
-                    console.log("Node selected: " + sortedPeers[i].ip + ":" + sortedPeers[i].port + ", height: " 
-                        + sortedPeers[i].height + ", delay: " + sortedPeers[i].delay);
-                }
-                return Promise.resolve(sortedPeers[i]);
-            }).catch((error) => {
-                // try next node
-            });    
-        }
         
-        // None of the nodes received from this peer worked
-        return Promise.reject();
+        return testNode(sortedPeers, network, verbose);   
     }).catch((error) => {
         return findPeer(network, verbose);
     }); 
 }
 
+var testNode = (sortedPeers, network, verbose) => {
+    let server = toolbox.getNode(sortedPeers[0]);
+    let uri = `${server}/api/peers/version`;
+    let options = {
+        uri: uri,
+        headers: {
+            nethash: network.nethash,
+            version: '1.0.0',
+            port:1
+        },
+        timeout: 1000
+    }; 
+    return getFromNode(options)
+    .then((nodeStatus) => {
+        if(verbose) {
+            console.log(`Node selected: ${sortedPeers[0].ip}:${sortedPeers[0].port}, height: ${sortedPeers[0].height}, delay: ${sortedPeers[0].delay}`);
+        }
+        return Promise.resolve(sortedPeers[0]);
+    }).catch((error) => {
+        // try next node
+        if (verbose){
+            console.log(`${error}. Failed to connect. Trying next node.`);
+            sortedPeers.shift();
+            if(sortedPeers.length) {
+                server = toolbox.getNode(sortedPeers[0]);
+                options.uri = `${server}/api/peers/version`;    
+                return testNode(sortedPeers, network, verbose); 
+            }
+            return Promise.reject();
+        }
+    });
+}
 
 var getFromNode = (options) => {
     

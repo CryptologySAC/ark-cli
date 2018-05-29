@@ -23,7 +23,7 @@ vorpal.command('connect <network>', 'Connect to network <network>.')
         node = connected;
         let server = toolbox.getNode(node);
         let networkName = node.network.name ? node.network.name : 'connected';
-        vorpal.delimiter(networkName + '>').log('Connected to Node: ' + server);
+        vorpal.delimiter(`${networkName}>`).log(`Connected to Node: ${server}`);
         callback();
     })
     .catch((error) => {
@@ -35,9 +35,9 @@ vorpal.command('connect <network>', 'Connect to network <network>.')
 vorpal.command('disconnect', 'Disconnect from connected node.')
 .action( (args, callback) => {
     let server = toolbox.getNode(node);
-    server = server ? server + ' ' : '';
+    server = server ? `${server} ` : '';
     node = null;
-    vorpal.delimiter('ark>').log('node ' + server + 'disconnected');
+    vorpal.delimiter('ark>').log(`node ${server} disconnected.`);
     callback();
 });
 
@@ -112,7 +112,7 @@ vorpal.command('verbose [status]', 'Show verbose logging [on|off].')
             verbose = false;
             verboseStatus = 'off';
     }
-    vorpal.log('Verbose logging turned ' + verboseStatus + '.');
+    vorpal.log(`Verbose logging turned ${verboseStatus}.`);
     callback();
 });
 

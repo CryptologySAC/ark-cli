@@ -35,7 +35,7 @@ cliProgram.command('account <address>')
         ARKNetwork.connect(network, verbose).then(node => {
             if(verbose) {
                 let server = toolbox.getNode(node);
-                console.log('Connected to Node: ' + server);
+                console.log(`Connected to Node: ${server}`);
             }
             
             let commands = ARKCommands.prepareGetAccount(cmd.account, cmd.balance, cmd.key, cmd.delegates, address, node, verbose);
