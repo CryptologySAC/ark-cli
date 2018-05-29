@@ -98,29 +98,32 @@ function findPeer(network, verbose) {
         sortedPeers.sort((a, b) => parseInt(b.height, 10) - parseInt(a.height, 10) || parseInt(a.delay, 10) - parseInt(b.delay,10));
         
         // Test if the selected node actually works
-        let server = toolbox.getNode(sortedPeers[0]);
-        let uri = server + "/api/peers/version";
-        let options = {
-            uri: uri,
-            headers: {
-                nethash: network.nethash,
-                version: '1.0.0',
-                port:1
-            },
-            timeout: 1000
-        }; 
-        return getFromNode(options)
-        .then((nodeStatus) => {
-            if(verbose) {
-                console.log("Node selected: " + sortedPeers[0].ip + ":" + sortedPeers[0].port + ", height: " 
-                    + sortedPeers[0].height + ", delay: " + sortedPeers[0].delay);
-            }
-            return Promise.resolve(sortedPeers[0]);
-        }).catch((error) => {
-            return Promise.reject("Node not ok: " +error.toString());
-        });
-      
+        for(let i = 0; i < sortedPeers.length; i++) {
+            let server = toolbox.getNode(sortedPeers[i]);
+            let uri = server + "/api/peers/version";
+            let options = {
+                uri: uri,
+                headers: {
+                    nethash: network.nethash,
+                    version: '1.0.0',
+                    port:1
+                },
+                timeout: 1000
+            }; 
+            return getFromNode(options)
+            .then((nodeStatus) => {
+                if(verbose) {
+                    console.log("Node selected: " + sortedPeers[i].ip + ":" + sortedPeers[i].port + ", height: " 
+                        + sortedPeers[i].height + ", delay: " + sortedPeers[i].delay);
+                }
+                return Promise.resolve(sortedPeers[i]);
+            }).catch((error) => {
+                // try next node
+            });    
+        }
         
+        // None of the nodes received from this peer worked
+        return Promise.reject();
     }).catch((error) => {
         return findPeer(network, verbose);
     }); 
