@@ -73,7 +73,7 @@ vorpal.command('account <address> [detail]', 'Get [detail] account information f
         // Execute the commands
         Promise.all(commands)
         .then(results => {
-            toolbox.showData(ARKCommands.output, format);
+            toolbox.showData(ARKCommands.output, format, node);
             callback();
         })
         .catch((error) => {

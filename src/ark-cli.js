@@ -37,13 +37,13 @@ cliProgram.command('account <address>')
                 let server = toolbox.getNode(node);
                 console.log('Connected to Node: ' + server);
             }
-        
+            
             let commands = ARKCommands.prepareGetAccount(cmd.account, cmd.balance, cmd.key, cmd.delegates, address, node, verbose);
             
             // Execute the commands
             Promise.all(commands)
             .then(results => {
-                toolbox.showData(ARKCommands.output, format);
+                toolbox.showData(ARKCommands.output, format, node);
             }).catch(error => {
                 process.exitCode = 1;
                 console.log(error);
