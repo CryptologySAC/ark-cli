@@ -3,27 +3,21 @@
 const arkjs = require('arkjs');
 const toolbox = require('./utils.js');
 const arkjsnetworks = require('arkjs/lib/networks.js');
-const request = require('request-promise-native');
+const ARKAPI = require('./ark-api-v1.js');
+const {URL} = require('url');
+
 
 var ARKNetwork = ()=>{};
-    
-ARKNetwork.getFromNodeV1 = (options) => {
-    
-    return request(options)
-    .then((body) => {
-       
-        body = JSON.parse(body);
-        if ( !body.hasOwnProperty('success') || body.success === false) {
-            return Promise.reject('Failed: ' + body.error);
-        } 
-        return Promise.resolve(body);
-        
-    }).catch(function(error){
-        return Promise.reject(error);
-    });
-};
 
-ARKNetwork.connect = (network, verbose) => {
+ARKNetwork.connect = (network, verbose, nodeURI) => {
+    
+    // In case we want to connect to a node we follow a different path
+    if(nodeURI) {
+        console.log(`Connecting to node ${nodeURI}`);
+        return connectNodeURI(nodeURI, verbose);
+    }
+    
+    // Connect to a network
     switch(network) {
         case "testnet":
         case "devnet" :
@@ -61,7 +55,7 @@ function findPeer(network, verbose) {
     let server = network.peers[Math.floor(Math.random()*1000)%network.peers.length];
     server = toolbox.getNode(server);
     
-    let uri = `${server}/api/peers`;
+    let uri = server + "/api/peers";
     if(verbose){
         console.log(`Trying Peer: ${server}`);
     }
@@ -73,7 +67,7 @@ function findPeer(network, verbose) {
             version: '1.0.0',
             port:1
         },
-        timeout: 1000
+        timeout: 500
     }; 
     return getFromNode(options)
     .then((peerList) => {
@@ -105,6 +99,24 @@ function findPeer(network, verbose) {
     }); 
 }
 
+var connectNodeURI = ((nodeURI, verbose) => {
+    return ARKAPI.getNetworkFromNode(nodeURI, verbose)
+    .then(results => {
+        let uri = new URL(nodeURI);
+        let peer = {
+            protocol: `${uri.protocol}//`,
+            ip: uri.hostname,
+            port: uri.port,
+            nethash: results.network.nethash,
+            network: results.network
+        };
+        return Promise.resolve(peer);
+    })
+    .catch(error => {
+        return Promise.reject(error);
+    });
+});
+
 var testNode = (sortedPeers, network, verbose) => {
     let server = toolbox.getNode(sortedPeers[0]);
     let uri = `${server}/api/peers/version`;
@@ -129,8 +141,6 @@ var testNode = (sortedPeers, network, verbose) => {
             console.log(`${error}. Failed to connect. Trying next node.`);
             sortedPeers.shift();
             if(sortedPeers.length) {
-                server = toolbox.getNode(sortedPeers[0]);
-                options.uri = `${server}/api/peers/version`;    
                 return testNode(sortedPeers, network, verbose); 
             }
             return Promise.reject();
@@ -140,7 +150,7 @@ var testNode = (sortedPeers, network, verbose) => {
 
 var getFromNode = (options) => {
     
-    return ARKNetwork.getFromNodeV1(options);
+    return ARKAPI.getFromNode(options);
 };
 
 module.exports = ARKNetwork;

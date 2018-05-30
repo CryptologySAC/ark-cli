@@ -83,10 +83,10 @@ ARKCommands.prepareGetAccount = (account, balance, key, delegates, address, node
             .then((result) => {
                 ARKCommands.output = merge(ARKCommands.output, result);
                 resolve();
-        })
-        .catch((error) => {
-            reject(error);
-                    });
+            })
+            .catch((error) => {
+                reject(error);
+            });
         }));
     }
             

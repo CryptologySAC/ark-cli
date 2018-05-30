@@ -17,7 +17,7 @@ cliProgram.command('account <address>')
     .option('-k, --key', 'Get the public key for this account.')
     .option('-d, --delegates', 'Get the delegates for this account')
     .option('-n, --network <network>', 'The network for this address [ark|testnet]', 'ark')
-    // TODO .option('--node <uri>', 'Connect directly to a node on <uri>.') /* Query the node for nethash etc */
+    .option('-c, --node <node>', 'Connect directly to a node on <node>.') /* Query the node for nethash etc */
     .option('-f, --format <format>', 'How to format the output [json|table]', 'json')
     .option('-v, --verbose', 'Show verbose logging')
     .action( (address, cmd) => {
@@ -25,6 +25,7 @@ cliProgram.command('account <address>')
         let verbose = cmd.verbose ? true : false;
         let network = cmd.network ? cmd.network : 'ark';
         let format = cmd.format ? cmd.format : "json";
+        let nodeURI = cmd.node ? cmd.node : false;
         
         // Default to getting account information.
         if (!cmd.balance && !cmd.key && !cmd.delegates) {
@@ -32,22 +33,27 @@ cliProgram.command('account <address>')
         }
         
         // First Connect to the network
-        ARKNetwork.connect(network, verbose).then(node => {
+        ARKNetwork.connect(network, verbose, nodeURI)
+        .then(node => {
             if(verbose) {
                 let server = toolbox.getNode(node);
                 console.log(`Connected to Node: ${server}`);
             }
-            
+        
             let commands = ARKCommands.prepareGetAccount(cmd.account, cmd.balance, cmd.key, cmd.delegates, address, node, verbose);
             
             // Execute the commands
             Promise.all(commands)
             .then(results => {
                 toolbox.showData(ARKCommands.output, format, node);
-            }).catch(error => {
-                process.exitCode = 1;
-                console.log(error);
             })
+            .catch(error => {
+                return Promise.reject(error);
+            })
+        })
+        .catch(error => {
+            process.exitCode = 1;
+            console.log(error);
         });
     }
 );

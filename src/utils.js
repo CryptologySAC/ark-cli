@@ -35,7 +35,7 @@ toolbox.showData = (data, format, node) => {
 function accountData(data, node) {
     let table = new Table('Account');
     let symbol = '';
-    
+  
     if(node && node.hasOwnProperty('network')) {
         symbol = node.network.hasOwnProperty('symbol') ?  `${node.network.symbol} ` : '';
     }

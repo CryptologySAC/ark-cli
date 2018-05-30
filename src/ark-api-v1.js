@@ -1,11 +1,12 @@
 "use strict";
-const ARKNetwork = require('./network.js');
+//const ARKNetwork = require('./network.js');
 const toolbox = require('./utils.js');
+const request = require('request-promise-native');
 var ARKAPI = ()=>{};    
     
 const port = 1;
 const version = "1.0.0";
-const timeout = 1000;
+const timeout = 5000;
 
 /******** Account ********/
 
@@ -31,7 +32,7 @@ ARKAPI.getAccount = (address, node, verbose) => {
         timeout: timeout
     };    
     
-    return ARKNetwork.getFromNodeV1(options)
+    return ARKAPI.getFromNode(options)
     .then((result) => {
         if(verbose) {
             console.log("Account information received from node.");
@@ -45,8 +46,8 @@ ARKAPI.getAccount = (address, node, verbose) => {
         if(verbose) {
             console.log(error);
         }
-        let noAccount = {"account": error };
-        return Promise.resolve(noAccount); // Resolve instead of reject for future chaining of commands
+        let noAccount = {"account": "" };
+        return Promise.reject(noAccount); // Resolve instead of reject for future chaining of commands
     });
 }
 
@@ -71,7 +72,7 @@ ARKAPI.accountGetBalance = (address, node, verbose) => {
         timeout: timeout
     };    
     
-    return ARKNetwork.getFromNodeV1(options)
+    return ARKAPI.getFromNode(options)
     .then((result) => {
         if(verbose) {
             console.log("Balance received from node.");
@@ -85,7 +86,7 @@ ARKAPI.accountGetBalance = (address, node, verbose) => {
         if(verbose) {
             console.log(error);
         }
-        let noBalance = {"balance": error };
+        let noBalance = {"balance": "" };
         return Promise.resolve(noBalance); // Resolve instead of reject for chaining of commands
     });
 }
@@ -112,7 +113,7 @@ ARKAPI.accountGetPublicKey = (address, node, verbose) => {
         timeout: timeout
     };    
     
-    return ARKNetwork.getFromNodeV1(options)
+    return ARKAPI.getFromNode(options)
     .then((result) => {
         if(verbose) {
             console.log("Public key received from node.");
@@ -126,7 +127,7 @@ ARKAPI.accountGetPublicKey = (address, node, verbose) => {
         if(verbose) {
             console.log(error);
         }
-        let noPublickey = {"publicKey":error}; 
+        let noPublickey = {"publicKey":""}; 
         return Promise.resolve(noPublickey);
     });
 };
@@ -152,7 +153,7 @@ ARKAPI.accountGetDelegates = (address, node, verbose) => {
         timeout: timeout
     };    
     
-    return ARKNetwork.getFromNodeV1(options)
+    return ARKAPI.getFromNode(options)
     .then((result) => {
         if(verbose) {
             console.log("Delegates received from node.");
@@ -165,9 +166,78 @@ ARKAPI.accountGetDelegates = (address, node, verbose) => {
         if(verbose) {
             console.log(error);
         }
-        let noDelegates = {"delegates":error}; 
+        let noDelegates = {"delegates":[]}; 
         return Promise.resolve(noDelegates);
     });
 };
+
+/**
+ * @dev     Connect to an ARK node and GET request information
+ * @param   {json} options Options for the GET request {uri, header{nethash, port, version}}
+ * @return  Promise result with data or Promise reject with error
+ */ 
+ARKAPI.getFromNode = (options) => {
+    
+    if(!options.hasOwnProperty('uri') 
+    || !options.hasOwnProperty('headers') 
+    || !options.headers.hasOwnProperty('nethash')
+    || !options.headers.hasOwnProperty('port')
+    || !options.headers.hasOwnProperty('version')) {
+        return Promise.reject('Request does not comply to ARK v1 standard.');
+    }
+    
+    return request(options)
+    .then((body) => {
+       
+        body = JSON.parse(body);
+        if ( !body.hasOwnProperty('success') || body.success != true) {
+            let error = body.hasOwnProperty('error') ? body.error : "Couldn't connect to node.";  
+            return Promise.reject(`Failed: ${error}`);
+        } 
+        return Promise.resolve(body);
+        
+    }).catch(function(error){
+        return Promise.reject(`Failed ${error}`);
+    });
+};
+
+ARKAPI.getNetworkFromNode = ((nodeURI, verbose) => {
+    let uri = `${nodeURI}/api/loader/autoconfigure`
+    let options ={
+        uri: uri,
+        headers: {
+            nethash: "none",
+            version: version,
+            port: port
+        },
+        timeout: timeout
+    };
+    
+    return ARKAPI.getFromNode(options)
+    .then(result => {
+        
+        if (result.hasOwnProperty('network') && result.network.hasOwnProperty('nethash')) {
+            if(verbose) {
+                console.log("Network information received from node.");
+            }
+            // Prepare result for output
+            delete result.success;
+            return Promise.resolve(result);
+        }
+        
+        if(verbose) {
+            console.log("Can't receive Network information from node: This node is not configured correctly.");
+        }
+        
+        return Promise.reject(`Can't receive network information from ${nodeURI}.`);
+    })
+    .catch(error => {
+        if(verbose) {
+            console.log("Can't receive Network information from node: This is not a public node.");
+        }
+        return Promise.reject(`Can't connect to ${nodeURI}.`);
+    });
+    
+});
 
 module.exports = ARKAPI;
