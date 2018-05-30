@@ -76,7 +76,6 @@ function findPeer(network, verbose) {
         let sortedPeers = peerList.peers;
         sortedPeers = sortedPeers.map((peer) => {
             if (peer.status==="OK") {
-                peer.nethash = network.nethash;
                 peer.network = network;
                 if(verbose) {
                     console.log(`Node found: ${peer.ip}:${peer.port}, height: ${peer.height}, delay: ${peer.delay}`);
@@ -93,7 +92,7 @@ function findPeer(network, verbose) {
         
         // Test if the selected node actually works
         
-        return testNode(sortedPeers, network, verbose);   
+        return testNode(sortedPeers, verbose);   
     }).catch((error) => {
         return findPeer(network, verbose);
     }); 
@@ -117,13 +116,13 @@ var connectNodeURI = ((nodeURI, verbose) => {
     });
 });
 
-var testNode = (sortedPeers, network, verbose) => {
+var testNode = (sortedPeers, verbose) => {
     let server = toolbox.getNode(sortedPeers[0]);
     let uri = `${server}/api/peers/version`;
     let options = {
         uri: uri,
         headers: {
-            nethash: network.nethash,
+            nethash: sortedPeers[0].network.nethash,
             version: '1.0.0',
             port:1
         },
@@ -134,14 +133,28 @@ var testNode = (sortedPeers, network, verbose) => {
         if(verbose) {
             console.log(`Node selected: ${sortedPeers[0].ip}:${sortedPeers[0].port}, height: ${sortedPeers[0].height}, delay: ${sortedPeers[0].delay}`);
         }
-        return Promise.resolve(sortedPeers[0]);
-    }).catch((error) => {
+        return Promise.resolve(sortedPeers[0], verbose);
+    })
+    .then((node, verbose) => {
+        // Update network configuration
+        let nodeURI = toolbox.getNode(node);
+        return ARKAPI.getNetworkFromNode(nodeURI, verbose)
+        .then(results =>{
+            node.network = results.network;
+            return Promise.resolve(node);
+        })
+        .catch(node => {
+            // The node was tested previously, so should be ok without updated network info.
+            return Promise.resolve(node);
+        })
+    })
+    .catch((error) => {
         // try next node
         if (verbose){
             console.log(`${error}. Failed to connect. Trying next node.`);
             sortedPeers.shift();
             if(sortedPeers.length) {
-                return testNode(sortedPeers, network, verbose); 
+                return testNode(sortedPeers, verbose); 
             }
             return Promise.reject();
         }

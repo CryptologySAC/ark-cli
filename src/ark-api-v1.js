@@ -25,7 +25,7 @@ ARKAPI.getAccount = (address, node, verbose) => {
     let options = {
         uri: uri,
         headers: {
-            nethash: node.nethash,
+            nethash: node.network.nethash,
             version: version,
             port: port
         },
@@ -65,7 +65,7 @@ ARKAPI.accountGetBalance = (address, node, verbose) => {
     let options = {
         uri: uri,
         headers: {
-            nethash: node.nethash,
+            nethash: node.network.nethash,
             version: version,
             port: port
         },
@@ -106,7 +106,7 @@ ARKAPI.accountGetPublicKey = (address, node, verbose) => {
     let options = {
         uri: uri,
         headers: {
-            nethash: node.nethash,
+            nethash: node.network.nethash,
             version: version,
             port: port
         },
@@ -146,7 +146,7 @@ ARKAPI.accountGetDelegates = (address, node, verbose) => {
     let options = {
         uri: uri,
         headers: {
-            nethash: node.nethash,
+            nethash: node.network.nethash,
             version: version,
             port: port
         },
