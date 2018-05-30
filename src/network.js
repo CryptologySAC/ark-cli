@@ -4,8 +4,8 @@ const arkjs = require('arkjs');
 const toolbox = require('./utils.js');
 const ARKAPI = require('./ark-api-v1.js');
 const {URL} = require('url');
-const mainnet = require("../ark-peers/mainnet.json");
-const devnet = require("../ark-peers/devnet.json");
+const mainnetPeers = require("../ark-peers/mainnet.json");
+const devnetPeers = require("../ark-peers/devnet.json");
 
 
 var ARKNetwork = ()=>{};
@@ -24,13 +24,11 @@ ARKNetwork.connect = (network, verbose, nodeURI) => {
     switch(network) {
         case "testnet":
         case "devnet" :
-            network = 'testnet';
-            selectedNetwork = {name:"devnet", peers:devnet};
+            selectedNetwork = {name:"devnet", peers:devnetPeers};
             break;
         case "mainnet":
         case "ark":
-            network = 'ark';
-            selectedNetwork = {name:"mainnet", peers:mainnet};
+            selectedNetwork = {name:"mainnet", peers:mainnetPeers};
 		    break;
         default:
 	}
