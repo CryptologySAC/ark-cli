@@ -53,7 +53,8 @@ function accountData(data, node) {
             table.addRow(item, "" + data.account[item]);
         }
     }
-    if(data.hasOwnProperty('delegates' ) && data.delegates[0].hasOwnProperty('username')) {
+    
+    if(data.hasOwnProperty('delegates' ) && data.delegates.length && data.delegates[0].hasOwnProperty('username')) {
         table.addRow('delegate', data.delegates[0].username);
     }
     

@@ -1,0 +1,3 @@
+[submodule "ark-peers"]
+	path = ark-peers
+	url = https://github.com/ArkEcosystem/ARK-Peers.git

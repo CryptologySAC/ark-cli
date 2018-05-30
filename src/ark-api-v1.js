@@ -155,7 +155,7 @@ ARKAPI.accountGetDelegates = (address, node, verbose) => {
     
     return ARKAPI.getFromNode(options)
     .then((result) => {
-        if(verbose) {
+        if(verbose && result.delegates.length) {
             console.log("Delegates received from node.");
         }
         

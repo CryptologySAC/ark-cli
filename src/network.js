@@ -2,9 +2,10 @@
 
 const arkjs = require('arkjs');
 const toolbox = require('./utils.js');
-const arkjsnetworks = require('arkjs/lib/networks.js');
 const ARKAPI = require('./ark-api-v1.js');
 const {URL} = require('url');
+const mainnet = require("../ark-peers/mainnet.json");
+const devnet = require("../ark-peers/devnet.json");
 
 
 var ARKNetwork = ()=>{};
@@ -17,20 +18,23 @@ ARKNetwork.connect = (network, verbose, nodeURI) => {
         return connectNodeURI(nodeURI, verbose);
     }
     
+    let selectedNetwork;
+    
     // Connect to a network
     switch(network) {
         case "testnet":
         case "devnet" :
             network = 'testnet';
+            selectedNetwork = {name:"devnet", peers:devnet};
             break;
         case "mainnet":
         case "ark":
             network = 'ark';
+            selectedNetwork = {name:"mainnet", peers:mainnet};
 		    break;
         default:
 	}
-	
-    let selectedNetwork = arkjsnetworks[network];
+
     
     if (!selectedNetwork) {
         return Promise.reject(`Can't connect to ${network}: Network not found.`);
