@@ -21,7 +21,7 @@ cliProgram.command('account <address>')
     .option('-f, --format <format>', 'How to format the output [json|table]', 'json')
     .option('-v, --verbose', 'Show verbose logging')
     .action( (address, cmd) => {
-        ARKCommands.output = {"account" : {"address": address}};
+        ARKCommands.output = { "account" : {"address": address}};
         let verbose = cmd.verbose ? true : false;
         let network = cmd.network ? cmd.network : 'ark';
         let format = cmd.format ? cmd.format : "json";
@@ -83,6 +83,7 @@ cliProgram.command('transaction')
     
 // Start a terminal
 // Get the node information
+// TODO decide if we should split this to a separate branch
 cliProgram.command('term')
     .description('Start an ARK terminal.') 
     .action(() => { 

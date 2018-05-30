@@ -18,14 +18,34 @@ vorpal.command('connect <network>', 'Connect to network <network>.')
     node = null;
     let network = args.network;
     
-    ARKNetwork.connect(network, verbose)
+    ARKNetwork.connect(network, verbose, false)
     .then(connected => {
         node = connected;
         let server = toolbox.getNode(node);
-        let networkName = node.network.name ? node.network.name : 'connected';
+        let networkName = node.network.hasOwnProperty('name') && node.network.name ? node.network.name : 'connected';
         vorpal.delimiter(`${networkName}>`).log(`Connected to Node: ${server}`);
         callback();
     })
+    .catch((error) => {
+        vorpal.log(error);
+        callback();
+    });
+});
+
+vorpal.command('node <node>', 'Connect to node <node>.')
+.action( (args, callback) => {
+    // Reset a potential active connection
+    node = null;
+    let nodeURI = args.node;
+    
+    ARKNetwork.connect("none", verbose, nodeURI)
+    .then(connected => {
+        node = connected;
+        let server = toolbox.getNode(node);
+        let networkName = node.network.hasOwnProperty('name') && node.network.name ? node.network.name : nodeURI;
+        vorpal.delimiter(`${networkName}>`).log(`Connected to Node: ${server}`);
+        callback();
+    }) 
     .catch((error) => {
         vorpal.log(error);
         callback();
