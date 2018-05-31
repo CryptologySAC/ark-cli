@@ -151,6 +151,7 @@ function prepareGetAccount(account, balance, key, delegates, address, node, verb
 }
 
 
+
 module.exports = ARKCommands;
 module.exports.getAccount = getAccount;
 module.exports.accountGetBalance = accountGetBalance;

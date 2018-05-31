@@ -22,7 +22,7 @@ function showData(data, format, node) {
     switch(format) {
         case 'table':
             if (data.hasOwnProperty('account')) {
-                let accountTable = accountData(data, node);
+                let accountTable = getAccountTable(data, node);
                 console.log(accountTable.toString());
                 
             }
@@ -33,7 +33,7 @@ function showData(data, format, node) {
     }
 }
 
-function accountData(data, node) {
+function getAccountTable(data, node) {
     let table = new Table('Account');
     let symbol = '';
   
@@ -50,7 +50,7 @@ function accountData(data, node) {
     }
     
     if(data.account.hasOwnProperty('success') && !data.account.success) {
-        table.setTitle("Error retrieving account.")    
+        table.setTitle("Error retrieving account.") ;   
     }
     
     for(let item in data.account) {

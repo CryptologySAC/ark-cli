@@ -1,8 +1,7 @@
 "use strict";
 const toolbox = require('./utils.js');
 const request = require('request-promise-native');
-    
-const version = "1.0.0";
+
 const timeout = 8000;
 
 /******** Account ********/
@@ -16,7 +15,7 @@ const timeout = 8000;
  */
 async function getAccount(address, node) {
     let command = `/api/accounts?address=${address}`;
-    let options = prepareOptions(node, command);
+    let options = prepareRequestOptions(node, command);
     
     try {
         let results = await getFromNode(options);
@@ -39,7 +38,7 @@ async function getAccount(address, node) {
  */
 async function accountGetDelegate(address, node){
     let command = `/api/accounts/delegates?address=${address}`;
-    let options = prepareOptions(node, command); 
+    let options = prepareRequestOptions(node, command); 
     
     try {
         let result = await getFromNode(options);
@@ -67,7 +66,7 @@ async function accountGetDelegate(address, node){
  */
 async function accountGetBalance (address, node){
     let command = `/api/accounts/getBalance?address=${address}`;
-    let options = prepareOptions(node, command);  
+    let options = prepareRequestOptions(node, command);  
     
     try{
         let balance = await getFromNode(options);
@@ -95,7 +94,7 @@ async function accountGetBalance (address, node){
  */
 async function accountGetPublicKey(address, node) {
     let command = `/api/accounts/getPublickey?address=${address}`;
-    let options = prepareOptions(node, command);  
+    let options = prepareRequestOptions(node, command);  
        
     
     return getFromNode(options)
@@ -144,16 +143,9 @@ async function getFromNode(options) {
     }
 };
 
-async function getNetworkFromNode(nodeURI) {
-    let options ={
-        uri: `${nodeURI}/api/loader/autoconfigure`,
-        headers: {
-            nethash: "none",
-            version: "1",
-            port: 1
-        },
-        timeout: timeout
-    };
+async function getNetworkConfigFromNode(node) {
+    let command = '/api/loader/autoconfigure';
+    let options = prepareRequestOptions(node, command);  
     
     try {
         let result = await getFromNode(options)
@@ -162,24 +154,35 @@ async function getNetworkFromNode(nodeURI) {
         && result.network.hasOwnProperty('nethash')
         && result.network.nethash )
         {
-            // Prepare result for output
-            delete result.success;
-            return Promise.resolve(result);
+            return result.network;
         }
         
-        throw `Can't receive network information from ${nodeURI}.`;
+        throw `Failed to receive network configuration from ${node.network.protocol}://${node.network.ip}:${node.network.port}.`;
     }
     catch(error) {
-        throw error.toString();
+        throw error;
     }
 }
 
-function prepareOptions(node, command) {
+async function getActiveNodes(network) {
+    let command = "/api/peers";
+    let options = prepareRequestOptions(network.peers[0], command);
+    
+    try {
+        return await getFromNode(options);
+    }
+    catch(error) {
+        throw error;
+    }
+}
+
+function prepareRequestOptions(node, command) {
     let server  = toolbox.getNode(node);
     let uri     = server + command;
-    let nethash = node.network.hasOwnProperty('nethash') && node.network.nethash ? node.network.nethash : "none";
-    let port    = node.network.hasOwnProperty('port') && node.network.port ? node.network.port : 1;
-    let options = {
+    let nethash = node.hasOwnProperty('network') && node.network.hasOwnProperty('nethash') && node.network.nethash ? node.network.nethash : "none";
+    let port    = node.hasOwnProperty('port') && node.port ? node.port : 1;
+    let version = node.hasOwnProperty('version') && node.version ? node.version : "1.0.0";
+    return {
         uri: uri,
         headers: {
             nethash: nethash,
@@ -188,13 +191,13 @@ function prepareOptions(node, command) {
         },
         timeout: timeout
     };    
-    return options;
 }
 
 
 module.exports.getAccount = getAccount;
 module.exports.getFromNode = getFromNode;
 module.exports.accountGetBalance = accountGetBalance;
-module.exports.getNetworkFromNode = getNetworkFromNode;
+module.exports.getNetworkConfigFromNode = getNetworkConfigFromNode;
 module.exports.accountGetPublicKey = accountGetPublicKey;
 module.exports.accountGetDelegate = accountGetDelegate;
+module.exports.getActiveNodes = getActiveNodes;

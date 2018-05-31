@@ -1,5 +1,4 @@
 "use strict";
-
 const cliProgram = require('commander');
 const ARKNetwork = require('./network.js');
 const ARKCommands = require('./ark-commands.js');
@@ -11,12 +10,12 @@ cliProgram.version('0.0.1');
 // ARK Node API v1 /accounts/*
 // Get the account information for an address
 cliProgram.command('account <address>')
-    .description('Get the data for <address>.')
-    .option('-a, --account', 'Get account information.')
+    .description('Get the account data for <address>.')
+    .option('-a, --account', 'Get the account data for this account.')
     .option('-b, --balance', 'Get the balance for this account.')
     .option('-k, --key', 'Get the public key for this account.')
-    .option('-d, --delegates', 'Get the delegates for this account')
-    .option('-n, --network <network>', 'The network for this address [mainnet|devnet]', 'mainnet')
+    .option('-d, --delegate', 'Get the delegate voted by this account')
+    .option('-n, --network <network>', 'The network to query for this account [mainnet|devnet]', 'mainnet')
     .option('-c, --node <node>', 'Connect directly to a node on <node>.')
     .option('-f, --format <format>', 'How to format the output [json|table]', 'json')
     .option('-v, --verbose', 'Show verbose logging')
@@ -33,18 +32,19 @@ cliProgram.command('account <address>')
         }
         
         // First Connect to the network
-        ARKNetwork.connect(network, nodeURI, verbose)
+        ARKNetwork.connectBlockchain(network, nodeURI, verbose)
         .then(node => {
+            
             if(verbose) {
                 let server = toolbox.getNode(node);
-                console.log(`Connected to Node: ${server}`);
+                console.log(`Successfully connected to node: ${server}`);
             }
         
-            let commands = ARKCommands.prepareGetAccount(cmd.account, cmd.balance, cmd.key, cmd.delegates, address, node, verbose);
+            let commands = ARKCommands.prepareGetAccount(cmd.account, cmd.balance, cmd.key, cmd.delegate, address, node, verbose);
             
             // Execute the commands
             Promise.all(commands)
-            .then(results => {
+            .then(() => {
                 toolbox.showData(ARKCommands.output, format, node);
             })
             .catch(error => {
