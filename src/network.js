@@ -23,37 +23,29 @@ async function connect(network="mainnet", nodeURI=false, verbose=false) {
         
             return await connectNodeURI(nodeURI, verbose);
         }
-    
-        // We're connecting to a network.
-        let selectedNetwork = false;
+
     
         // Connect to a network
-        switch(network) {
-            case "testnet":
-            case "devnet" :
-                selectedNetwork = {name:"devnet", peers:devnetPeers};
-                break;
-            case "mainnet":
-            case "ark":
-                selectedNetwork = {name:"mainnet", peers:mainnetPeers};
-    		    break;
-            default:
-    	}
-
+        // TODO put this in a separate config and enable sidechains to be added.
+        let networks = {
+            "devnet": {"peers":devnetPeers},
+            "mainnet": {"peers":mainnetPeers}
+        };
+        let selectedNetwork = networks[network] ? networks[network] : false;
     
         if (!selectedNetwork) {
             throw `Couldn't connect to ${network}: Network not configured.`;
         }
         
         if(verbose) {
-            console.log(`Trying to connect to ${selectedNetwork.name}`);  
+            console.log(`Trying to connect to ${network}`);  
         }
   
         return await findPeer(selectedNetwork, verbose);
     }
     catch(error) {
         if(verbose){
-            console.log("Failed connecting to the network.");
+            console.log(`Failed connecting to ${network}.`);
         }
         throw error;
     }
@@ -61,7 +53,7 @@ async function connect(network="mainnet", nodeURI=false, verbose=false) {
 
 async function findPeer(network, verbose) {
     
-    let server = network.peers[Math.floor(Math.random()*1000)%network.peers.length];
+    let server = network.peers[0];
     server = toolbox.getNode(server);
     
     let uri = server + "/api/peers";
@@ -79,35 +71,38 @@ async function findPeer(network, verbose) {
         timeout: 500
     }; 
     
-    let peerList = await ARKAPI.getFromNode(options);
+    try {
+        let peerList = await ARKAPI.getFromNode(options);
         
-    // Select all peers that have a OK status and return the peer with the heighest block.
-    let sortedPeers = peerList.peers;
-    sortedPeers = sortedPeers.map((peer) => {
-        if (peer.status==="OK") {
-            peer.network = network;
-            if(verbose) {
-                console.log(`Node found: ${peer.ip}:${peer.port}, height: ${peer.height}, delay: ${peer.delay}`);
+        // Select all peers that have a OK status and return the peer with the heighest block.
+        let sortedPeers = peerList.peers;
+        sortedPeers = sortedPeers.map((peer) => {
+            if (peer.status==="OK") {
+                peer.network = network;
+                if(verbose) {
+                    console.log(`Node found: ${peer.ip}:${peer.port}, height: ${peer.height}, delay: ${peer.delay}`);
+                }
+            return peer;
             }
-        return peer;
+        });
+        
+        if (sortedPeers.length === 0) {
+            throw 'Error sorting peers.';
         }
-    });
         
-    if (sortedPeers.length === 0) {
-        return Promise.reject('Error sorting peers.');
-    }
+        // Sort Nodes by height and delay
+        sortedPeers.sort((a, b) => parseInt(b.height, 10) - parseInt(a.height, 10) || parseInt(a.delay, 10) - parseInt(b.delay,10));
         
-    // Sort Nodes by height and delay
-    sortedPeers.sort((a, b) => parseInt(b.height, 10) - parseInt(a.height, 10) || parseInt(a.delay, 10) - parseInt(b.delay,10));
+        // Test if the selected node actually works
         
-    // Test if the selected node actually works
-    try {    
-        let node = await testNode(sortedPeers, verbose);
-        return node;
+        return await testNode(sortedPeers, verbose);
     }
     catch(error) {
-        let node =  await findPeer(network, verbose);
-        return node;
+        network.peers.shift();
+        if (network.peers.length) {
+            return await findPeer(network, verbose);
+        }
+        throw "Network currently unavailable."
     } 
 }
 
