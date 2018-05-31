@@ -33,14 +33,14 @@ async function getAccount(address, node, verbose) {
 }
 
 /**
- * @dev     Get the delegates of an account.
- * @param   {string}    address The address for which to get the delegates for.
- * @param   {string}    node The node to connect to for the delegates.
+ * @dev     Get the delegate voted for by an account.
+ * @param   {string}    address The address for which to get the delegate for.
+ * @param   {string}    node The node to connect to for the delegate.
  * @param   {boolean}   verbose Show logs or not 
  * @return  Promise with JSON Delegates.
  **/
-async function accountGetDelegates(address, node, verbose) {
-    let output = {'account':{"delegate":{}}};
+async function accountGetDelegate(address, node, verbose) {
+    let output = {'account':{'address': address, "delegate":{}}};
     try {
         output.account.delegate = await ARKAPI.accountGetDelegate(address, node);
         output.account.delegate.success = true;
@@ -64,13 +64,25 @@ async function accountGetDelegates(address, node, verbose) {
  * @param   {boolean}   verbose Show logs or not 
  * @return  Promise with JSON Balance.
  **/
-async function accountGetBalance(address, node, verbose){
-    return ARKAPI.accountGetBalance(address, node, verbose)
-    .then((balance) => {
-        return Promise.resolve(balance);
-    }).catch((error) => {
-        return Promise.reject(error);
-    });
+async function accountGetBalance(address, node, verbose) {
+    let output = {'account':{'address': address}};
+    
+    try{
+        let balances = await ARKAPI.accountGetBalance(address, node);
+        output.account.balance = balances.hasOwnProperty('balance') ? balances.balance : "unknown";
+        output.account.unconfirmedBalance = balances.hasOwnProperty('unconfirmedBalance') ? balances.unconfirmedBalance : "unknown";
+        output.account.success = true;
+    }
+    catch(error){
+         // error in receiving delegate 
+        if(verbose){
+            console.log(`Can't get Account balance: ${error}`);
+        }
+        output.account.success = false;
+    }
+    finally {
+        return output;
+    }
 }
 
 /**
@@ -89,7 +101,7 @@ async function accountGetPublicKey(address, node, verbose){
     });
 }
 
-function prepareGetAccount(account, balance, key, delegates, address, node, verbose) {
+function prepareGetAccount(account, balance, key, delegate, address, node, verbose) {
     let commands = [];
             
     if(account) {
@@ -131,16 +143,12 @@ function prepareGetAccount(account, balance, key, delegates, address, node, verb
         }));
     }
             
-    if(delegates) {
+    if(delegate) {
         commands.push(new Promise((resolve, reject) => {
-            accountGetDelegates(address, node, verbose)
+            accountGetDelegate(address, node, verbose)
             .then((result) => {
-                try {
-                    ARKCommands.output  = merge(ARKCommands.output, result);
-                    resolve();
-                }catch(error){
-                    throw(error);    
-                }
+                ARKCommands.output = merge(ARKCommands.output, result);
+                resolve();
             })
             .catch((error) => {
                 reject(error);
@@ -156,5 +164,5 @@ module.exports = ARKCommands;
 module.exports.getAccount = getAccount;
 module.exports.accountGetBalance = accountGetBalance;
 module.exports.accountGetPublicKey = accountGetPublicKey;
-module.exports.accountGetDelegates = accountGetDelegates;
+module.exports.accountGetDelegates = accountGetDelegate;
 module.exports.prepareGetAccount = prepareGetAccount;

@@ -42,15 +42,16 @@ async function accountGetDelegate(address, node){
     
     try {
         let result = await getFromNode(options);
+        let delegate = {'username':"-"};
         
         // Prepare result for output
-        if(!result.hasOwnProperty('delegates') 
-        && !result.delegates.length 
-        && !result.delegates[0].hasOwnProperty('username')) 
+        if(result.hasOwnProperty('delegates') 
+        && result.delegates.length 
+        && result.delegates[0].hasOwnProperty('username')) 
         {
-            result.delegates=[{"username":"-"}];
+            delegate.username = result.delegates[0].username;
         }
-        return result.delegates[0];
+        return delegate;
     }
     catch(error) {
         throw error;
@@ -73,8 +74,6 @@ async function accountGetBalance (address, node){
        
         
         // Prepare result for output
-        delete balance.success;
-        balance = {"account" : balance};
         return Promise.resolve(balance);
     }
     catch(error){

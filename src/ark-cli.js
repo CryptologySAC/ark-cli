@@ -1,15 +1,15 @@
 "use strict";
-const cliProgram = require('commander');
+const ARKCLI = require('commander');
 const ARKNetwork = require('./network.js');
 const ARKCommands = require('./ark-commands.js');
 const ARKTerm = require('./ark-term.js');
 const toolbox = require('./utils.js');
 
-cliProgram.version('0.0.1');
+ARKCLI.version('0.0.1');
 
 // ARK Node API v1 /accounts/*
 // Get the account information for an address
-cliProgram.command('account <address>')
+ARKCLI.command('account <address>')
     .description('Get the account data for <address>.')
     .option('-a, --account', 'Get the account data for this account.')
     .option('-b, --balance', 'Get the balance for this account.')
@@ -27,7 +27,7 @@ cliProgram.command('account <address>')
         let nodeURI = cmd.node ? cmd.node : false;
         
         // Default to getting account information.
-        if (!cmd.balance && !cmd.key && !cmd.delegates) {
+        if (!cmd.balance && !cmd.key && !cmd.delegate) {
             cmd.account = true;
         }
         
@@ -61,34 +61,34 @@ cliProgram.command('account <address>')
 
 // ARK Node API v1 /blocks/*
 // Get the block information
-cliProgram.command('block <block>')
+ARKCLI.command('block <block>')
     .description('Get the data for <block>.')
   
 // ARK Node API v1 /delegates/*
 // Get the delegate information
-cliProgram.command('delegate <delegate>')
+ARKCLI.command('delegate <delegate>')
     .description('Get the data for <delegate>.')
     
 // Get the blockchain network information
-cliProgram.command('blockchain <network>')
+ARKCLI.command('blockchain <network>')
     .description('Get the data for the blockchain <network>.')
   
 // Get the node information
-cliProgram.command('node <node>')
+ARKCLI.command('node <node>')
     .description('Get the data for the <node>.')  
     
 // Post a transaction
-cliProgram.command('transaction')
+ARKCLI.command('transaction')
     .description('Post a transaction to the blockchain.')  
     
 // Start a terminal
 // Get the node information
 // TODO decide if we should split this to a separate branch
-cliProgram.command('term')
+ARKCLI.command('term')
     .description('Start an ARK terminal.') 
     .action(() => { 
         ARKTerm.start();
     }
 );
 
-module.exports = cliProgram;    
+module.exports = ARKCLI;    
