@@ -93,12 +93,20 @@ async function accountGetBalance(address, node, verbose) {
  * @return  Promise with JSON Public key.
  **/
 async function accountGetPublicKey(address, node, verbose){
-    return ARKAPI.accountGetPublicKey(address, node, verbose)
-    .then(function(publicKey) {
-        return Promise.resolve(publicKey);
-    }).catch(function(error) {
-        return Promise.reject(error);
-    });
+    let output = {'account':{'address': address}};
+    
+    try {
+        let publicKey = await ARKAPI.accountGetPublicKey(address, node);
+        output.account.publicKey = publicKey;
+        output.account.success = true;
+    }
+    catch(error) {
+        output.account.publicKey = "";
+        output.account.success = false;
+    }
+    finally {
+        return output;
+    }
 }
 
 function prepareGetAccount(account, balance, key, delegate, address, node, verbose) {

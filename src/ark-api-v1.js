@@ -101,12 +101,11 @@ async function accountGetPublicKey(address, node) {
         
         // Prepare result for output
         delete result.success;
-        result = {"account" : result};
-        return Promise.resolve(result);
+        result = result.hasOwnProperty('publicKey') ? result.publicKey : "";
+        return result;
     }).catch((error) => {
         
-        let noPublickey = {"publicKey":""}; 
-        return Promise.resolve(noPublickey);
+        throw error;
     });
 }
 
