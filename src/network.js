@@ -1,58 +1,65 @@
 "use strict";
 
-const arkjs = require('arkjs');
+//const arkjs = require('arkjs');
 const toolbox = require('./utils.js');
 const ARKAPI = require('./ark-api-v1.js');
 const {URL} = require('url');
 const mainnetPeers = require("../ark-peers/mainnet.json");
 const devnetPeers = require("../ark-peers/devnet.json");
 
-
-var ARKNetwork = ()=>{};
-
-ARKNetwork.connect = (network, verbose, nodeURI) => {
+async function connect(network="mainnet", nodeURI=false, verbose=false) {
     
-    // In case we want to connect to a node we follow a different path
-    if(nodeURI) {
-        console.log(`Connecting to node ${nodeURI}`);
-        return connectNodeURI(nodeURI, verbose);
-    }
-    
-    let selectedNetwork;
-    
-    // Connect to a network
-    switch(network) {
-        case "testnet":
-        case "devnet" :
-            selectedNetwork = {name:"devnet", peers:devnetPeers};
-            break;
-        case "mainnet":
-        case "ark":
-            selectedNetwork = {name:"mainnet", peers:mainnetPeers};
-		    break;
-        default:
-	}
-
-    
-    if (!selectedNetwork) {
-        return Promise.reject(`Can't connect to ${network}: Network not found.`);
-    }
+    try {
+   
+        // In case we want to connect to a specific node.
+        if(nodeURI) {
+            
+            // If the uri isn't valid this will throw an error.
+            new URL(nodeURI);
+            
+            if(verbose) {
+                console.log(`Connecting to node ${nodeURI}`);
+            }
         
-    if(verbose) {
-        console.log(`Connecting to ${selectedNetwork.name}`);  
-    }
+            return await connectNodeURI(nodeURI, verbose);
+        }
+    
+        // We're connecting to a network.
+        let selectedNetwork = false;
+    
+        // Connect to a network
+        switch(network) {
+            case "testnet":
+            case "devnet" :
+                selectedNetwork = {name:"devnet", peers:devnetPeers};
+                break;
+            case "mainnet":
+            case "ark":
+                selectedNetwork = {name:"mainnet", peers:mainnetPeers};
+    		    break;
+            default:
+    	}
+
+    
+        if (!selectedNetwork) {
+            throw `Couldn't connect to ${network}: Network not configured.`;
+        }
+        
+        if(verbose) {
+            console.log(`Trying to connect to ${selectedNetwork.name}`);  
+        }
   
-    return findPeer(selectedNetwork, verbose)
-    .then((peer) => {
-        return Promise.resolve(peer);
-    })
-    .catch((error) => {
-        return Promise.reject(error);
-    });
-};
+        return await findPeer(selectedNetwork, verbose);
+    }
+    catch(error) {
+        if(verbose){
+            console.log("Failed connecting to the network.");
+        }
+        throw error;
+    }
+}
 
-
-function findPeer(network, verbose) {
+async function findPeer(network, verbose) {
     
     let server = network.peers[Math.floor(Math.random()*1000)%network.peers.length];
     server = toolbox.getNode(server);
@@ -71,54 +78,58 @@ function findPeer(network, verbose) {
         },
         timeout: 500
     }; 
-    return getFromNode(options)
-    .then((peerList) => {
+    
+    let peerList = await ARKAPI.getFromNode(options);
         
-        // Select all peers that have a OK status and return the peer with the heighest block.
-        let sortedPeers = peerList.peers;
-        sortedPeers = sortedPeers.map((peer) => {
-            if (peer.status==="OK") {
-                peer.network = network;
-                if(verbose) {
-                    console.log(`Node found: ${peer.ip}:${peer.port}, height: ${peer.height}, delay: ${peer.delay}`);
-                }
-                return peer;
+    // Select all peers that have a OK status and return the peer with the heighest block.
+    let sortedPeers = peerList.peers;
+    sortedPeers = sortedPeers.map((peer) => {
+        if (peer.status==="OK") {
+            peer.network = network;
+            if(verbose) {
+                console.log(`Node found: ${peer.ip}:${peer.port}, height: ${peer.height}, delay: ${peer.delay}`);
             }
-        });
-        
-        if (sortedPeers.length === 0) {
-            return Promise.reject('Error sorting peers.');
+        return peer;
         }
-        // Sort Nodes by height and delay
-        sortedPeers.sort((a, b) => parseInt(b.height, 10) - parseInt(a.height, 10) || parseInt(a.delay, 10) - parseInt(b.delay,10));
+    });
         
-        // Test if the selected node actually works
+    if (sortedPeers.length === 0) {
+        return Promise.reject('Error sorting peers.');
+    }
         
-        return testNode(sortedPeers, verbose);   
-    }).catch((error) => {
-        return findPeer(network, verbose);
-    }); 
+    // Sort Nodes by height and delay
+    sortedPeers.sort((a, b) => parseInt(b.height, 10) - parseInt(a.height, 10) || parseInt(a.delay, 10) - parseInt(b.delay,10));
+        
+    // Test if the selected node actually works
+    try {    
+        let node = await testNode(sortedPeers, verbose);
+        return node;
+    }
+    catch(error) {
+        let node =  await findPeer(network, verbose);
+        return node;
+    } 
 }
 
-var connectNodeURI = ((nodeURI, verbose) => {
-    return ARKAPI.getNetworkFromNode(nodeURI, verbose)
-    .then(results => {
+async function connectNodeURI(nodeURI, verbose){
+    try {
+        let networkConfig = await ARKAPI.getNetworkFromNode(nodeURI, verbose);
         let uri = new URL(nodeURI);
         let peer = {
             protocol: `${uri.protocol}//`,
             ip: uri.hostname,
             port: uri.port,
-            nethash: results.network.nethash,
-            network: results.network
+            nethash: networkConfig.network.nethash,
+            network: networkConfig.network
         };
         return Promise.resolve(peer);
-    })
-    .catch(error => {
+    }
+    catch(error) {
         return Promise.reject(error);
-    });
-});
+    }
+}
 
-var testNode = (sortedPeers, verbose) => {
+async function testNode(sortedPeers, verbose) {
     let server = toolbox.getNode(sortedPeers[0]);
     let uri = `${server}/api/peers/version`;
     let options = {
@@ -130,7 +141,7 @@ var testNode = (sortedPeers, verbose) => {
         },
         timeout: 1000
     }; 
-    return getFromNode(options)
+    return await ARKAPI.getFromNode(options)
     .then((nodeStatus) => {
         if(verbose) {
             console.log(`Node selected: ${sortedPeers[0].ip}:${sortedPeers[0].port}, height: ${sortedPeers[0].height}, delay: ${sortedPeers[0].delay}`);
@@ -148,7 +159,7 @@ var testNode = (sortedPeers, verbose) => {
         .catch(node => {
             // The node was tested previously, so should be ok without updated network info.
             return Promise.resolve(node);
-        })
+        });
     })
     .catch((error) => {
         // try next node
@@ -163,9 +174,4 @@ var testNode = (sortedPeers, verbose) => {
     });
 }
 
-var getFromNode = (options) => {
-    
-    return ARKAPI.getFromNode(options);
-};
-
-module.exports = ARKNetwork;
+module.exports.connect = connect;

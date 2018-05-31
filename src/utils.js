@@ -1,14 +1,15 @@
 "use strict";
-var Table = require('ascii-table');
+const Table = require('ascii-table');
 
-var toolbox = () => {};
-
-toolbox.getNode = (node) => {
+function getNode(node) {
+    let server = "https://node1.arknet.cloud:4001";
     if(node) {
-        let protocol = node.protocol ? node.protocol : 'http://';
-        return `${protocol}${node.ip}:${node.port}`;
+        let port        = node.hasOwnProperty('port') && node.port ? node.port : 4001;
+        let protocol    = node.protocol && node.protocol ? node.protocol : 'http://';
+        let ip          = node.hasOwnProperty('ip') && node.ip ? node.ip : 'node1.arknet.cloud';
+        server          = `${protocol}${ip}:${port}`;
     } 
-    return null;
+    return server;
 }
 
 /**
@@ -16,7 +17,7 @@ toolbox.getNode = (node) => {
  * @param {JSON} data The data to format.
  * @param {string} format How to format the output.
  **/
-toolbox.showData = (data, format, node) => {
+function showData(data, format, node) {
     format = format.toLowerCase().trim();
     switch(format) {
         case 'table':
@@ -48,14 +49,24 @@ function accountData(data, node) {
         data.account.unconfirmedBalance = formatBalance(data.account.unconfirmedBalance, symbol);
     }
     
+    if(data.account.hasOwnProperty('success') && !data.account.success) {
+        table.setTitle("Error retrieving account.")    
+    }
+    
     for(let item in data.account) {
         if (data.account[item] && data.account[item].length) {
-            table.addRow(item, "" + data.account[item]);
+            table.addRow(item, data.account[item]);
         }
     }
     
-    if(data.hasOwnProperty('delegates' ) && data.delegates.length && data.delegates[0].hasOwnProperty('username')) {
-        table.addRow('delegate', data.delegates[0].username);
+    if(data.account.hasOwnProperty('delegate' )) {
+        if (data.account.delegate.hasOwnProperty('success') && !data.account.delegate.success ) {
+            table.addRow('delegate', "Error retrieving delegate");    
+        }
+        
+        else if (data.account.delegate.hasOwnProperty('username')) {
+            table.addRow('delegate', data.account.delegate.username);
+        }
     }
     
     return table;
@@ -67,4 +78,5 @@ function formatBalance(amount, symbol) {
     return symbol + balance;
 } 
 
-module.exports = toolbox;
+module.exports.showData = showData;
+module.exports.getNode = getNode;

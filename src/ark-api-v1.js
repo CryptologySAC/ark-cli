@@ -1,12 +1,9 @@
 "use strict";
-//const ARKNetwork = require('./network.js');
 const toolbox = require('./utils.js');
 const request = require('request-promise-native');
-var ARKAPI = ()=>{};    
     
-const port = 1;
 const version = "1.0.0";
-const timeout = 5000;
+const timeout = 8000;
 
 /******** Account ********/
 
@@ -15,40 +12,50 @@ const timeout = 5000;
  * @param   {string}    address The address for which to get the information for.
  * @param   {json}      node    The node to poll for the information.
  * @param   {boolean}   verbose Show logs or not 
- * @return  Promise.resolve() with JSON account.
+ * @return  {json} account
  */
-ARKAPI.getAccount = (address, node, verbose) => {
-    let server = toolbox.getNode(node);
-    let command = "/api/accounts?address=";
+async function getAccount(address, node) {
+    let command = `/api/accounts?address=${address}`;
+    let options = prepareOptions(node, command);
     
-    let uri = server + command + address;
-    let options = {
-        uri: uri,
-        headers: {
-            nethash: node.network.nethash,
-            version: version,
-            port: port
-        },
-        timeout: timeout
-    };    
-    
-    return ARKAPI.getFromNode(options)
-    .then((result) => {
-        if(verbose) {
-            console.log("Account information received from node.");
+    try {
+        let results = await getFromNode(options);
+        if (!results.hasOwnProperty('account')) {
+            throw "No account received from node.";
         }
+        return results.account;
+    }
+    catch(error){
+       throw error;
+    }
+}
+
+/*
+ * @dev     Get the delegates of an account.
+ * @param   {string}    address The address for which to get the delegatesfor.
+ * @param   {json}      node    The node to poll for the delegates.
+ * @param   {boolean}   verbose Show logs or not 
+ * @return  Promise.resolve() with JSON Delegates.
+ */
+async function accountGetDelegate(address, node){
+    let command = `/api/accounts/delegates?address=${address}`;
+    let options = prepareOptions(node, command); 
+    
+    try {
+        let result = await getFromNode(options);
         
         // Prepare result for output
-        delete result.success;
-        return Promise.resolve(result);
-    })
-    .catch(function(error){
-        if(verbose) {
-            console.log(error);
+        if(!result.hasOwnProperty('delegates') 
+        && !result.delegates.length 
+        && !result.delegates[0].hasOwnProperty('username')) 
+        {
+            result.delegates=[{"username":"-"}];
         }
-        let noAccount = {"account": "" };
-        return Promise.reject(noAccount); // Resolve instead of reject for future chaining of commands
-    });
+        return result.delegates[0];
+    }
+    catch(error) {
+        throw error;
+    }
 }
 
 /*
@@ -58,37 +65,24 @@ ARKAPI.getAccount = (address, node, verbose) => {
  * @param   {boolean}   verbose Show logs or not 
  * @return  Promise.resolve() with JSON Balance.
  */
-ARKAPI.accountGetBalance = (address, node, verbose) => {
-    let server = toolbox.getNode(node);
-    let command = "/api/accounts/getBalance?address=";
-    let uri = server + command + address;
-    let options = {
-        uri: uri,
-        headers: {
-            nethash: node.network.nethash,
-            version: version,
-            port: port
-        },
-        timeout: timeout
-    };    
+async function accountGetBalance (address, node){
+    let command = `/api/accounts/getBalance?address=${address}`;
+    let options = prepareOptions(node, command);  
     
-    return ARKAPI.getFromNode(options)
-    .then((result) => {
-        if(verbose) {
-            console.log("Balance received from node.");
-        }
+    try{
+        let balance = await getFromNode(options);
+       
         
         // Prepare result for output
-        delete result.success;
-        result = {"account" : result};
-        return Promise.resolve(result);
-    }).catch((error) => {
-        if(verbose) {
-            console.log(error);
-        }
+        delete balance.success;
+        balance = {"account" : balance};
+        return Promise.resolve(balance);
+    }
+    catch(error){
+        
         let noBalance = {"balance": "" };
         return Promise.resolve(noBalance); // Resolve instead of reject for chaining of commands
-    });
+    }
 }
 
 
@@ -99,145 +93,108 @@ ARKAPI.accountGetBalance = (address, node, verbose) => {
  * @param   {boolean}   verbose Show logs or not 
  * @return  Promise.resolve() with JSON Balance.
  */
-ARKAPI.accountGetPublicKey = (address, node, verbose) => {
-    let server = toolbox.getNode(node);
-    let command = "/api/accounts/getPublickey?address=";
-    let uri = server + command + address;
-    let options = {
-        uri: uri,
-        headers: {
-            nethash: node.network.nethash,
-            version: version,
-            port: port
-        },
-        timeout: timeout
-    };    
+async function accountGetPublicKey(address, node) {
+    let command = `/api/accounts/getPublickey?address=${address}`;
+    let options = prepareOptions(node, command);  
+       
     
-    return ARKAPI.getFromNode(options)
+    return getFromNode(options)
     .then((result) => {
-        if(verbose) {
-            console.log("Public key received from node.");
-        }
         
         // Prepare result for output
         delete result.success;
         result = {"account" : result};
         return Promise.resolve(result);
     }).catch((error) => {
-        if(verbose) {
-            console.log(error);
-        }
+        
         let noPublickey = {"publicKey":""}; 
         return Promise.resolve(noPublickey);
     });
-};
+}
 
-/*
- * @dev     Get the delegates of an account.
- * @param   {string}    address The address for which to get the delegatesfor.
- * @param   {json}      node    The node to poll for the delegates.
- * @param   {boolean}   verbose Show logs or not 
- * @return  Promise.resolve() with JSON Delegates.
- */
-ARKAPI.accountGetDelegates = (address, node, verbose) => {
-    let server = toolbox.getNode(node);
-    let command = "/api/accounts/delegates?address=";
-    let uri = server + command + address;
-    let options = {
-        uri: uri,
-        headers: {
-            nethash: node.network.nethash,
-            version: version,
-            port: port
-        },
-        timeout: timeout
-    };    
-    
-    return ARKAPI.getFromNode(options)
-    .then((result) => {
-        if(verbose && result.delegates.length) {
-            console.log("Delegates received from node.");
-        }
-        
-        // Prepare result for output
-        delete result.success;
-        return Promise.resolve(result);
-    }).catch((error) => {
-        if(verbose) {
-            console.log(error);
-        }
-        let noDelegates = {"delegates":[]}; 
-        return Promise.resolve(noDelegates);
-    });
-};
+
 
 /**
  * @dev     Connect to an ARK node and GET request information
  * @param   {json} options Options for the GET request {uri, header{nethash, port, version}}
  * @return  Promise result with data or Promise reject with error
  */ 
-ARKAPI.getFromNode = (options) => {
+async function getFromNode(options) {
     
     if(!options.hasOwnProperty('uri') 
     || !options.hasOwnProperty('headers') 
     || !options.headers.hasOwnProperty('nethash')
     || !options.headers.hasOwnProperty('port')
-    || !options.headers.hasOwnProperty('version')) {
-        return Promise.reject('Request does not comply to ARK v1 standard.');
+    || !options.headers.hasOwnProperty('version')) 
+    {
+        throw 'Request does not comply to ARK v1 standard.';
     }
     
-    return request(options)
-    .then((body) => {
-       
+    try {
+        let body = await request(options);
         body = JSON.parse(body);
         if ( !body.hasOwnProperty('success') || body.success != true) {
-            let error = body.hasOwnProperty('error') ? body.error : "Couldn't connect to node.";  
-            return Promise.reject(`Failed: ${error}`);
+            let error = body.hasOwnProperty('error') && body.error ? body.error : "Couldn't retrieve from node.";  
+            throw error;
         } 
-        return Promise.resolve(body);
-        
-    }).catch(function(error){
-        return Promise.reject(`Failed ${error}`);
-    });
+        return body;
+    } 
+    catch(error){
+        throw error;
+    }
 };
 
-ARKAPI.getNetworkFromNode = ((nodeURI, verbose) => {
-    let uri = `${nodeURI}/api/loader/autoconfigure`
+async function getNetworkFromNode(nodeURI) {
     let options ={
-        uri: uri,
+        uri: `${nodeURI}/api/loader/autoconfigure`,
         headers: {
             nethash: "none",
-            version: version,
-            port: port
+            version: "1",
+            port: 1
         },
         timeout: timeout
     };
     
-    return ARKAPI.getFromNode(options)
-    .then(result => {
+    try {
+        let result = await getFromNode(options)
         
-        if (result.hasOwnProperty('network') && result.network.hasOwnProperty('nethash')) {
-            if(verbose) {
-                console.log("Network information received from node.");
-            }
+        if (result.hasOwnProperty('network') 
+        && result.network.hasOwnProperty('nethash')
+        && result.network.nethash )
+        {
             // Prepare result for output
             delete result.success;
             return Promise.resolve(result);
         }
         
-        if(verbose) {
-            console.log("Can't receive Network information from node: This node is not configured correctly.");
-        }
-        
-        return Promise.reject(`Can't receive network information from ${nodeURI}.`);
-    })
-    .catch(error => {
-        if(verbose) {
-            console.log("Can't receive Network information from node: This is not a public node.");
-        }
-        return Promise.reject(`Can't connect to ${nodeURI}.`);
-    });
-    
-});
+        throw `Can't receive network information from ${nodeURI}.`;
+    }
+    catch(error) {
+        throw error.toString();
+    }
+}
 
-module.exports = ARKAPI;
+function prepareOptions(node, command) {
+    let server  = toolbox.getNode(node);
+    let uri     = server + command;
+    let nethash = node.network.hasOwnProperty('nethash') && node.network.nethash ? node.network.nethash : "none";
+    let port    = node.network.hasOwnProperty('port') && node.network.port ? node.network.port : 1;
+    let options = {
+        uri: uri,
+        headers: {
+            nethash: nethash,
+            version: version,
+            port: port
+        },
+        timeout: timeout
+    };    
+    return options;
+}
+
+
+module.exports.getAccount = getAccount;
+module.exports.getFromNode = getFromNode;
+module.exports.accountGetBalance = accountGetBalance;
+module.exports.getNetworkFromNode = getNetworkFromNode;
+module.exports.accountGetPublicKey = accountGetPublicKey;
+module.exports.accountGetDelegate = accountGetDelegate;

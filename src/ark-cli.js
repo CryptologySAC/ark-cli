@@ -16,14 +16,14 @@ cliProgram.command('account <address>')
     .option('-b, --balance', 'Get the balance for this account.')
     .option('-k, --key', 'Get the public key for this account.')
     .option('-d, --delegates', 'Get the delegates for this account')
-    .option('-n, --network <network>', 'The network for this address [ark|testnet]', 'ark')
-    .option('-c, --node <node>', 'Connect directly to a node on <node>.') /* Query the node for nethash etc */
+    .option('-n, --network <network>', 'The network for this address [mainnet|devnet]', 'mainnet')
+    .option('-c, --node <node>', 'Connect directly to a node on <node>.')
     .option('-f, --format <format>', 'How to format the output [json|table]', 'json')
     .option('-v, --verbose', 'Show verbose logging')
     .action( (address, cmd) => {
-        ARKCommands.output = { "account" : {"address": address}};
+        
         let verbose = cmd.verbose ? true : false;
-        let network = cmd.network ? cmd.network : 'ark';
+        let network = cmd.network ? cmd.network : 'mainnet';
         let format = cmd.format ? cmd.format : "json";
         let nodeURI = cmd.node ? cmd.node : false;
         
@@ -33,7 +33,7 @@ cliProgram.command('account <address>')
         }
         
         // First Connect to the network
-        ARKNetwork.connect(network, verbose, nodeURI)
+        ARKNetwork.connect(network, nodeURI, verbose)
         .then(node => {
             if(verbose) {
                 let server = toolbox.getNode(node);
@@ -48,7 +48,7 @@ cliProgram.command('account <address>')
                 toolbox.showData(ARKCommands.output, format, node);
             })
             .catch(error => {
-                return Promise.reject(error);
+                throw error;
             })
         })
         .catch(error => {
