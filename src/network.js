@@ -7,7 +7,7 @@ const {URL} = require('url');
 const mainnetPeers = require("../ark-peers/mainnet.json");
 const devnetPeers = require("../ark-peers/devnet.json");
 
-async function connectBlockchain(network="mainnet", nodeURI=false, verbose=false) {
+async function connectBlockchain(network="mainnet", nodeURI=false, verbose=false){
     
     try {
    
@@ -18,7 +18,7 @@ async function connectBlockchain(network="mainnet", nodeURI=false, verbose=false
             let uri = new URL(nodeURI);
             
             if(verbose) {
-                console.log(`Connecting to node ${nodeURI}`);
+                console.log(`Trying to connect to node ${nodeURI}`);
             }
             return await connectNodeURI(uri, verbose);
         }
@@ -33,7 +33,7 @@ async function connectBlockchain(network="mainnet", nodeURI=false, verbose=false
         let selectedNetwork = networks[network] ? networks[network] : false;
     
         if (!selectedNetwork) {
-            throw `Couldn't connect to ${network}: Network not configured.`;
+            throw `Couldn't connect to ${network}: Network not known to Ark-Cli.`;
         }
         
         if(verbose) {
@@ -54,19 +54,19 @@ async function selectPeer(network, verbose) {
 
     if(verbose){
         let server = toolbox.getNode(network.peers[0]);
-        console.log(`Trying Peer: ${server}`);
+        console.log(`Polling peer: ${server} for active nodes.`);
     }
     
     try {
         let peerList = await ARKAPI.getActiveNodes(network);
         
-        // Select all peers that have a OK status and return the peer with the heighest block.
+        // Select all peers that have a OK status and return the peer with the heighest block/lowest delay.
         let sortedPeers = peerList.peers;
         sortedPeers = sortedPeers.map((peer) => {
             if (peer.status==="OK") {
                 peer.network = network;
                 if(verbose) {
-                    console.log(`Node found: ${peer.ip}:${peer.port}, height: ${peer.height}, delay: ${peer.delay}`);
+                    console.log(`Active node discoverred: ${peer.ip}:${peer.port}, height: ${peer.height}, delay: ${peer.delay}`);
                 }
             return peer;
             }
@@ -83,6 +83,7 @@ async function selectPeer(network, verbose) {
         return await testNode(sortedPeers, verbose);
     }
     catch(error) {
+        // Try next seed peer, if any.
         network.peers.shift();
         if (network.peers.length) {
             return await selectPeer(network, verbose);

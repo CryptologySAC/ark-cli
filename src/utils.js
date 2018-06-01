@@ -2,14 +2,14 @@
 const Table = require('ascii-table');
 
 function getNode(node) {
-    let server = "https://node1.arknet.cloud:4001";
+    let uri = "https://node1.arknet.cloud:4001";
     if(node) {
-        let port        = node.hasOwnProperty('port') && node.port ? node.port : 4001;
-        let protocol    = node.protocol && node.protocol ? node.protocol : 'http://';
-        let ip          = node.hasOwnProperty('ip') && node.ip ? node.ip : 'node1.arknet.cloud';
-        server          = `${protocol}${ip}:${port}`;
+        let port    = node.hasOwnProperty('port') && node.port ? node.port : 4001;
+        let protocol= node.protocol && node.protocol ? node.protocol : 'http://';
+        let ip      = node.hasOwnProperty('ip') && node.ip ? node.ip : 'node1.arknet.cloud';
+        uri         = `${protocol}${ip}:${port}`;
     } 
-    return server;
+    return uri;
 }
 
 /**
@@ -26,7 +26,7 @@ function showData(data, format, node) {
                 console.log(accountTable.toString());
                 
             }
-            
+            // TODO add othertables for blocks, etc
             break;
         default:
             console.log(JSON.stringify(data));
@@ -37,6 +37,10 @@ function getAccountTable(data, node) {
     let table = new Table('Account');
     let symbol = '';
   
+    if(data.account.hasOwnProperty('success') && !data.account.success) {
+        table.setTitle("Error retrieving account.") ;   
+    }
+    
     if(node && node.hasOwnProperty('network')) {
         symbol = node.network.hasOwnProperty('symbol') ?  `${node.network.symbol} ` : '';
     }
@@ -47,10 +51,6 @@ function getAccountTable(data, node) {
     
     if(data.account.hasOwnProperty('unconfirmedBalance')) {
         data.account.unconfirmedBalance = formatBalance(data.account.unconfirmedBalance, symbol);
-    }
-    
-    if(data.account.hasOwnProperty('success') && !data.account.success) {
-        table.setTitle("Error retrieving account.") ;   
     }
     
     for(let item in data.account) {
@@ -70,7 +70,6 @@ function getAccountTable(data, node) {
     }
     
     return table;
-    
 }
 
 function formatBalance(amount, symbol) {

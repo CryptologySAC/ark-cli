@@ -3,9 +3,6 @@ const ARKAPI = require('./ark-api-v1.js');
 const merge = require('deepmerge');
 const ARKCommands = {'output':{}};
 
-
-/******** Account ********/
-
 /**
  * @dev     Get the account information.
  * @param   {string}    address The address for which to get the information for.
@@ -165,8 +162,6 @@ function prepareGetAccount(account, balance, key, delegate, address, node, verbo
     }
     return commands;
 }
-
-
 
 module.exports = ARKCommands;
 module.exports.getAccount = getAccount;

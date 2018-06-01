@@ -11,9 +11,12 @@
     "url": "git+https://github.com/wownmedia/ark-cli.git"
   },
   "keywords": [
-    "ARK",
-    "CLI"
+    "ark",
+    "cli"
   ],
+  "bin": {
+    "ark-cli": "index.js"
+  },
   "author": "Marc Schot, Cryptology ltd",
   "license": "MIT",
   "dependencies": {
@@ -28,5 +31,8 @@
   "bugs": {
     "url": "https://github.com/wownmedia/ark-cli/issues"
   },
-  "homepage": "https://github.com/wownmedia/ark-cli#readme"
+  "homepage": "https://github.com/wownmedia/ark-cli#readme",
+  "engines": {
+    "node": ">=0.8"
+  }
 }

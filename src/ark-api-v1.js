@@ -1,26 +1,22 @@
 "use strict";
 const toolbox = require('./utils.js');
 const request = require('request-promise-native');
-
-const timeout = 8000;
-
-/******** Account ********/
+const timeout = 8000; // 8 Seconds timeout, more symbolic than reasoned. Node to be polled has been succesfully connected to already.
 
 /*
- * @dev     Get the information of an account.
- * @param   {string}    address The address for which to get the information for.
- * @param   {json}      node    The node to poll for the information.
- * @param   {boolean}   verbose Show logs or not 
- * @return  {json} account
+ * @dev     Returns account information of an address
+ * @param   {string}address The address for which to get the information for.
+ * @param   {json}  node    The node to poll for the information.
+ * @return  {json}  account
  */
-async function getAccount(address, node) {
+async function getAccount(address, node){
     let command = `/api/accounts?address=${address}`;
     let options = prepareRequestOptions(node, command);
     
     try {
         let results = await getFromNode(options);
         if (!results.hasOwnProperty('account')) {
-            throw "No account received from node.";
+            throw "No account information received from node.";
         }
         return results.account;
     }
@@ -30,11 +26,10 @@ async function getAccount(address, node) {
 }
 
 /*
- * @dev     Get the delegates of an account.
- * @param   {string}    address The address for which to get the delegatesfor.
- * @param   {json}      node    The node to poll for the delegates.
- * @param   {boolean}   verbose Show logs or not 
- * @return  Promise.resolve() with JSON Delegates.
+ * @dev     Get the delegate voted for by an account.
+ * @param   {string}address The address for which to get the voted delegate for.
+ * @param   {json}  node    The node to poll for the delegate.
+ * @return  {json}  Delegate username.
  */
 async function accountGetDelegate(address, node){
     let command = `/api/accounts/delegates?address=${address}`;
@@ -60,61 +55,51 @@ async function accountGetDelegate(address, node){
 
 /*
  * @dev     Get the balance of an account.
- * @param   {string}    address The address for which to get the balance for.
- * @param   {json}      node    The node to poll for the balance.
- * @param   {boolean}   verbose Show logs or not 
- * @return  Promise.resolve() with JSON Balance.
+ * @param   {string}address The address for which to get the balance for.
+ * @param   {json}  node    The node to poll for the balance.
+ * @return  {json}  with Balance.
  */
 async function accountGetBalance (address, node){
     let command = `/api/accounts/getBalance?address=${address}`;
     let options = prepareRequestOptions(node, command);  
     
-    try{
-        let balance = await getFromNode(options);
-       
-        
-        // Prepare result for output
-        return Promise.resolve(balance);
+    try {
+        let results = await getFromNode(options);
+        if (!results.hasOwnProperty('balance') && !results.hasOwnProperty('unconfirmedBalance')) {
+            throw "No balance information received from node.";
+        }
+        return results;
     }
     catch(error){
-        
-        let noBalance = {"balance": "" };
-        return Promise.resolve(noBalance); // Resolve instead of reject for chaining of commands
+       throw error;
     }
 }
 
-
 /*
  * @dev     Get the public key of an account.
- * @param   {string}    address The address for which to get the public key for.
- * @param   {json}      node    The node to poll for the balance.
- * @param   {boolean}   verbose Show logs or not 
- * @return  Promise.resolve() with JSON Balance.
+ * @param   {string}address The address for which to get the public key for.
+ * @param   {json}  node    The node to poll for the public key.
+ * @return  {string} with public key.
  */
 async function accountGetPublicKey(address, node) {
     let command = `/api/accounts/getPublickey?address=${address}`;
     let options = prepareRequestOptions(node, command);  
        
+    try {
+        let result = await getFromNode(options);
     
-    return getFromNode(options)
-    .then((result) => {
-        
-        // Prepare result for output
-        delete result.success;
         result = result.hasOwnProperty('publicKey') ? result.publicKey : "";
         return result;
-    }).catch((error) => {
-        
+    }
+    catch(error) {
         throw error;
-    });
+    }
 }
-
-
 
 /**
  * @dev     Connect to an ARK node and GET request information
  * @param   {json} options Options for the GET request {uri, header{nethash, port, version}}
- * @return  Promise result with data or Promise reject with error
+ * @return  {json} result with requested data.
  */ 
 async function getFromNode(options) {
     
@@ -134,19 +119,25 @@ async function getFromNode(options) {
             let error = body.hasOwnProperty('error') && body.error ? body.error : "Couldn't retrieve from node.";  
             throw error;
         } 
+        delete body.success;
         return body;
     } 
     catch(error){
         throw error;
     }
-};
+}
 
+/**
+ * @dev Return the configuration of the network
+ * @param {json} node The node to poll for the data.
+ * @return {json} with network configuration.
+ */ 
 async function getNetworkConfigFromNode(node) {
     let command = '/api/loader/autoconfigure';
     let options = prepareRequestOptions(node, command);  
     
     try {
-        let result = await getFromNode(options)
+        let result = await getFromNode(options);
         
         if (result.hasOwnProperty('network') 
         && result.network.hasOwnProperty('nethash')
@@ -154,7 +145,6 @@ async function getNetworkConfigFromNode(node) {
         {
             return result.network;
         }
-        
         throw `Failed to receive network configuration from ${node.network.protocol}://${node.network.ip}:${node.network.port}.`;
     }
     catch(error) {
@@ -162,18 +152,30 @@ async function getNetworkConfigFromNode(node) {
     }
 }
 
+/**
+ * @dev Return the active nodes that are known to the peer that is polled.
+ * @param {json} network The seed peers to poll.
+ * @return {json} List of known nodes.
+ */ 
 async function getActiveNodes(network) {
     let command = "/api/peers";
     let options = prepareRequestOptions(network.peers[0], command);
     
     try {
-        return await getFromNode(options);
+        let nodes = await getFromNode(options);
+        if(!nodes.hasOwnProperty('peers') || !nodes.peers.length) {
+            throw "No active nodes received from this peer";
+        }
+        return nodes;
     }
     catch(error) {
         throw error;
     }
 }
 
+/**
+ * @dev Create a valid json object that defines a GET request
+ */ 
 function prepareRequestOptions(node, command) {
     let server  = toolbox.getNode(node);
     let uri     = server + command;
