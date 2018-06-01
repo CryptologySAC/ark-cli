@@ -26,11 +26,73 @@ function showData(data, format, node) {
                 console.log(accountTable.toString());
                 
             }
+            
+            if (data.hasOwnProperty('blockchain')) {
+                let blockchainTables = getBlockchainTable(data, node);
+                blockchainTables.forEach(table => {
+                    console.log(table.toString());    
+                });
+            }
             // TODO add othertables for blocks, etc
             break;
         default:
             console.log(JSON.stringify(data));
     }
+}
+
+function getBlockchainTable(data, node) {
+    let tables = [];
+    let symbol = '';
+     
+    if(node && node.hasOwnProperty('network')) {
+        symbol = node.network.hasOwnProperty('symbol') ?  `${node.network.symbol} ` : '';
+    }
+     
+    if(data.blockchain.hasOwnProperty('config')){
+        let configTable = new Table('Blockchain Configuration');
+        delete data.blockchain.config.success;
+        for(let item in data.blockchain.config) {
+            if (data.blockchain.config[item]) {
+                configTable.addRow(item, data.blockchain.config[item].toString());
+            }
+        }
+        
+        tables.push(configTable);
+    }
+     
+    if(data.blockchain.hasOwnProperty('status')){
+         let statusTable = new Table('Blockchain Status');
+         delete data.blockchain.status.success;
+         for(let item in data.blockchain.status) {
+            if (data.blockchain.status[item]) {
+                let entry;
+                switch (item) {
+                    case "fee":
+                    case "reward":
+                    case "supply":
+                        entry = formatBalance(data.blockchain.status[item],symbol);
+                        break;
+                    default:
+                    entry = data.blockchain.status[item].toString();
+                }
+                statusTable.addRow(item, entry) ;
+            }
+        }
+        tables.push(statusTable);
+    }
+     
+    if(data.blockchain.hasOwnProperty('fees')){
+         let feesTable = new Table('Blockchain Fees');
+         delete data.blockchain.fees.success;
+         for(let item in data.blockchain.fees) {
+            if (data.blockchain.fees[item]) {
+                 feesTable.addRow(item, formatBalance(data.blockchain.fees[item],symbol));
+            }
+        }
+        tables.push(feesTable);
+    }
+     
+    return tables;
 }
 
 function getAccountTable(data, node) {

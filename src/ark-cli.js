@@ -58,7 +58,57 @@ ARKCLI.command('account <address>')
 );
     
 
-// ARK Node API v1 /blocks/*
+// Get the blockchain network information
+ARKCLI.command('blockchain')
+    .description('Get the data for blockchain <network>.')
+    .option('--status', 'Get the status for this blockchain.')
+    .option('--config', 'Get the configuration for this blockchain.')
+    .option('--fees', 'Get the fees for this blockchain.')
+    .option('-n, --network <network>', 'The network to query [mainnet|devnet]', 'mainnet')
+    .option('-c, --node <node>', 'Connect directly to a node on <node>.')
+    .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
+    .option('-v, --verbose', 'Show verbose logging')
+    .action(cmd => {
+        let verbose = cmd.verbose ? true : false;
+        let network = cmd.network ? cmd.network : 'mainnet';
+        let format = cmd.format ? cmd.format : "json";
+        let nodeURI = cmd.node ? cmd.node : false;
+        
+        // First Connect to the network
+        ARKNetwork.connectBlockchain(network, nodeURI, verbose)
+        .then(node => {
+            
+            if(verbose) {
+                let server = toolbox.getNode(node);
+                console.log(`Successfully connected to node: ${server}`);
+            }
+            
+            // if no details have been specified we just get all of it
+            if (!cmd.fees && !cmd.config && !cmd.status) {
+                cmd.fees = true;
+                cmd.config = true;
+                cmd.status = true;
+            }
+            
+            let commands = ARKCommands.prepareGetBlockchain(cmd.status, cmd.fees, cmd.config, node, verbose);
+            
+            // Execute the commands
+            Promise.all(commands)
+            .then(() => {
+                toolbox.showData(ARKCommands.output, format, node);
+            })
+            .catch(error => {
+                throw error;
+            });
+        })
+        .catch(error => {
+            process.exitCode = 1;
+            console.log(error);
+        });
+    }
+);
+  
+
 // Get the block information
 ARKCLI.command('block <block>')
     .description('Get the data for <block>.');
@@ -68,10 +118,7 @@ ARKCLI.command('block <block>')
 ARKCLI.command('delegate <delegate>')
     .description('Get the data for <delegate>.');
     
-// Get the blockchain network information
-ARKCLI.command('blockchain <network>')
-    .description('Get the data for the blockchain <network>.');
-  
+
 // Get the node information
 ARKCLI.command('node <node>')
     .description('Get the data for the <node>.');

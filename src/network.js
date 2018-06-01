@@ -27,8 +27,8 @@ async function connectBlockchain(network="mainnet", nodeURI=false, verbose=false
         // Connect to a network
         // TODO put this in a separate config and enable sidechains to be added.
         let networks = {
-            "devnet": {"peers":devnetPeers},
-            "mainnet": {"peers":mainnetPeers}
+            "devnet": {"peers":devnetPeers, "name":"devnet"},
+            "mainnet": {"peers":mainnetPeers, "name":"mainnet"}
         };
         let selectedNetwork = networks[network] ? networks[network] : false;
     

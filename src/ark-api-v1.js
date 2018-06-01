@@ -153,6 +153,50 @@ async function getNetworkConfigFromNode(node) {
 }
 
 /**
+ * @dev Return the status of the network
+ * @param {json} node The node to poll for the data.
+ * @return {json} with network status.
+ */ 
+async function getNetworkStatusFromNode(node) {
+    let command = '/api/blocks/getStatus';
+    let options = prepareRequestOptions(node, command);  
+    
+    try {
+        let result = await getFromNode(options);
+        
+        if (result.hasOwnProperty('nethash')) {
+            return result;
+        }
+        throw `Failed to receive network status from ${node.network.protocol}://${node.network.ip}:${node.network.port}.`;
+    }
+    catch(error) {
+        throw error;
+    }
+}
+
+/**
+ * @dev Return the fees of the network
+ * @param {json} node The node to poll for the data.
+ * @return {json} with network status.
+ */ 
+async function getNetworkFeesFromNode(node) {
+    let command = '/api/blocks/getFees';
+    let options = prepareRequestOptions(node, command);  
+    
+    try {
+        let result = await getFromNode(options);
+        
+        if (result.hasOwnProperty('fees')) {
+            return result.fees;
+        }
+        throw `Failed to receive network fees from ${node.network.protocol}://${node.network.ip}:${node.network.port}.`;
+    }
+    catch(error) {
+        throw error;
+    }
+}
+
+/**
  * @dev Return the active nodes that are known to the peer that is polled.
  * @param {json} network The seed peers to poll.
  * @return {json} List of known nodes.
@@ -198,6 +242,8 @@ module.exports.getAccount = getAccount;
 module.exports.getFromNode = getFromNode;
 module.exports.accountGetBalance = accountGetBalance;
 module.exports.getNetworkConfigFromNode = getNetworkConfigFromNode;
+module.exports.getNetworkStatusFromNode = getNetworkStatusFromNode;
+module.exports.getNetworkFeesFromNode = getNetworkFeesFromNode;
 module.exports.accountGetPublicKey = accountGetPublicKey;
 module.exports.accountGetDelegate = accountGetDelegate;
 module.exports.getActiveNodes = getActiveNodes;

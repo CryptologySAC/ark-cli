@@ -106,6 +106,72 @@ async function accountGetPublicKey(address, node, verbose){
     }
 }
 
+/**
+ * @dev     Get the status of a network.
+ * @param   {string}    node The node to connect to.
+ * @param   {boolean}   verbose Show logs or not 
+ * @return  {json} with blockchain status.
+ **/
+async function blockchainGetStatus(node, verbose){
+    let output = {'blockchain':{'status':{}}};
+    
+    try {
+        let status = await ARKAPI.getNetworkStatusFromNode(node);
+        output.blockchain.status = status;
+        output.blockchain.status.success = true;
+    }
+    catch(error) {
+        output.blockchain.status.success = false;
+    }
+    finally {
+        return output;
+    }
+}
+
+/**
+ * @dev     Get the config of a network.
+ * @param   {string}    node The node to connect to.
+ * @param   {boolean}   verbose Show logs or not 
+ * @return  {json} with blockchain status.
+ **/
+async function blockchainGetConfig(node, verbose){
+    let output = {'blockchain':{'config':{}}};
+    
+    try {
+        let config = await ARKAPI.getNetworkConfigFromNode(node);
+        output.blockchain.config = config;
+        output.blockchain.config.success = true;
+    }
+    catch(error) {
+        output.blockchain.config.success = false;
+    }
+    finally {
+        return output;
+    }
+}
+
+/**
+ * @dev     Get the fees of a network.
+ * @param   {string}    node The node to connect to.
+ * @param   {boolean}   verbose Show logs or not 
+ * @return  {json} with blockchain status.
+ **/
+async function blockchainGetFees(node, verbose){
+    let output = {'blockchain':{'fees':{}}};
+    
+    try {
+        let fees = await ARKAPI.getNetworkFeesFromNode(node);
+        output.blockchain.fees = fees;
+        output.blockchain.fees.success = true;
+    }
+    catch(error) {
+        output.blockchain.fees.success = false;
+    }
+    finally {
+        return output;
+    }
+}
+
 function prepareGetAccount(account, balance, key, delegate, address, node, verbose) {
     let commands = [];
             
@@ -163,9 +229,58 @@ function prepareGetAccount(account, balance, key, delegate, address, node, verbo
     return commands;
 }
 
+function prepareGetBlockchain(status, fees, config, node, verbose) {
+    let commands = [];
+            
+    if(status) {
+        commands.push(new Promise((resolve, reject) => {
+            blockchainGetStatus(node, verbose)
+            .then((result) => {
+                ARKCommands.output = merge(ARKCommands.output, result);
+                resolve();
+            })
+            .catch((error) => {
+                reject(error);
+            });
+        }));
+    }
+    
+    if(fees) {
+        commands.push(new Promise((resolve, reject) => {
+            blockchainGetFees(node, verbose)
+            .then((result) => {
+                ARKCommands.output = merge(ARKCommands.output, result);
+                resolve();
+            })
+            .catch((error) => {
+                reject(error);
+            });
+        }));
+    }
+    
+    if(config) {
+        commands.push(new Promise((resolve, reject) => {
+            blockchainGetConfig(node, verbose)
+            .then((result) => {
+                ARKCommands.output = merge(ARKCommands.output, result);
+                resolve();
+            })
+            .catch((error) => {
+                reject(error);
+            });
+        }));
+    }
+    return commands;
+}
+
+
 module.exports = ARKCommands;
 module.exports.getAccount = getAccount;
 module.exports.accountGetBalance = accountGetBalance;
 module.exports.accountGetPublicKey = accountGetPublicKey;
 module.exports.accountGetDelegates = accountGetDelegate;
+module.exports.blockchainGetStatus = blockchainGetStatus;
+module.exports.blockchainGetConfig = blockchainGetConfig;
+module.exports.blockchainGetFees = blockchainGetFees;
 module.exports.prepareGetAccount = prepareGetAccount;
+module.exports.prepareGetBlockchain = prepareGetBlockchain;

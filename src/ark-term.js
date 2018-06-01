@@ -3,7 +3,7 @@
 const ARKNetwork = require('./network.js');
 const ARKCommands = require('./ark-commands.js');
 const toolbox = require('./utils.js');
-var vorpal = require('vorpal')();
+const vorpal = require('vorpal')();
 var node = null;
 var format = 'json';
 var verbose = false;
@@ -18,7 +18,7 @@ vorpal.command('connect <network>', 'Connect to network <network>.')
     node = null;
     let network = args.network;
     
-    ARKNetwork.connect(network, verbose, false)
+    ARKNetwork.connectBlockchain(network, false, verbose)
     .then(connected => {
         node = connected;
         let server = toolbox.getNode(node);
@@ -38,7 +38,7 @@ vorpal.command('node <node>', 'Connect to node <node>.')
     node = null;
     let nodeURI = args.node;
     
-    ARKNetwork.connect("none", verbose, nodeURI)
+    ARKNetwork.connectBlockchain("none", nodeURI, verbose)
     .then(connected => {
         node = connected;
         let server = toolbox.getNode(node);
@@ -67,27 +67,32 @@ vorpal.command('account <address> [detail]', 'Get [detail] account information f
         let account = false;
         let balance = false;
         let key = false;
-        let delegates = false;
+        let delegate = false;
         switch(args.detail) {
-            default:
-                account=true;
-                break;
             case 'all':
+            case 'a':    
                 account = true;
-                delegates = true;
+                delegate = true;
                 break;
+            case 'key':    
             case 'publickey':
+            case 'k':    
                 key = true;
                 break;
             case 'balance':
+            case 'b':    
                 balance = true;
                 break;
             case 'delegate':
-                delegates = true;
+            case 'd':    
+                delegate = true;
                 break;
+             default:
+                account=true;
+                break;    
         }
         let address = args.address;
-        let commands = ARKCommands.prepareGetAccount(account, balance, key, delegates, address, node, verbose);
+        let commands = ARKCommands.prepareGetAccount(account, balance, key, delegate, address, node, verbose);
         ARKCommands.output = {"account" : {"address": address}};
             
         // Execute the commands
@@ -110,6 +115,7 @@ vorpal.command('output <format>', 'Show output as <format>. Valid options are [j
 .action( (args, callback) => {
     switch(args.format) {
         case 'table':
+        case 't':    
             format = 'table';
             break;
         default:    
@@ -141,5 +147,5 @@ ARKTerm.start = () => {
     vorpal
         .delimiter('ark>')
         .show();
-}
+};
 module.exports = ARKTerm;
