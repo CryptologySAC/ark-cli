@@ -10,10 +10,10 @@ ARKCLI.version('0.0.1');
 // Get the account information for an address
 ARKCLI.command('account <address>')
     .description('Get the account data for <address>.')
-    .option('-a, --account', 'Get the account data for this account.')
-    .option('-b, --balance', 'Get the balance for this account.')
-    .option('-k, --key', 'Get the public key for this account.')
-    .option('-d, --delegate', 'Get the delegate voted for by this account')
+    .option('--account', 'Get the account data for this account.')
+    .option('--balance', 'Get the balance for this account.')
+    .option('--key', 'Get the public key for this account.')
+    .option('--delegate', 'Get the delegate voted for by this account')
     .option('-n, --network <network>', 'The network to query for this account [mainnet|devnet]', 'mainnet')
     .option('-c, --node <node>', 'Connect directly to a node on <node>.')
     .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
@@ -110,23 +110,192 @@ ARKCLI.command('blockchain')
   
 
 // Get the block information
+/* TODO
 ARKCLI.command('block <block>')
-    .description('Get the data for <block>.');
+    .description('Get the data for <block>.')
+    .option('-n, --network <network>', 'The network to query [mainnet|devnet]', 'mainnet')
+    .option('-c, --node <node>', 'Connect directly to a node on <node>.')
+    .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
+    .option('-v, --verbose', 'Show verbose logging')
+    .action( (block, cmd) => {
+        let verbose = cmd.verbose ? true : false;
+        let network = cmd.network ? cmd.network : 'mainnet';
+        let format = cmd.format ? cmd.format : "json";
+        let nodeURI = cmd.node ? cmd.node : false;
+        
+        // First Connect to the network
+        ARKNetwork.connectBlockchain(network, nodeURI, verbose)
+        .then(node => {
+            
+            if(verbose) {
+                let server = toolbox.getNode(node);
+                console.log(`Successfully connected to node: ${server}`);
+            }
+            
+            let commands = [];//ARKCommands.prepareGetBlocks(cmd.status, cmd.fees, cmd.config, node, verbose);
+            
+            // Execute the commands
+            Promise.all(commands)
+            .then(() => {
+                toolbox.showData(ARKCommands.output, format, node);
+            })
+            .catch(error => {
+                throw error;
+            });
+        })
+        .catch(error => {
+            process.exitCode = 1;
+            console.log(error);
+        });
+    }
+);
   
 // ARK Node API v1 /delegates/*
 // Get the delegate information
 ARKCLI.command('delegate <delegate>')
-    .description('Get the data for <delegate>.');
+    .description('Get the data for <delegate>.')
+    .option('-n, --network <network>', 'The network to query [mainnet|devnet]', 'mainnet')
+    .option('-c, --node <node>', 'Connect directly to a node on <node>.')
+    .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
+    .option('-v, --verbose', 'Show verbose logging')
+    .action( (delegate, cmd) => {
+        let verbose = cmd.verbose ? true : false;
+        let network = cmd.network ? cmd.network : 'mainnet';
+        let format = cmd.format ? cmd.format : "json";
+        let nodeURI = cmd.node ? cmd.node : false;
+        
+        // First Connect to the network
+        ARKNetwork.connectBlockchain(network, nodeURI, verbose)
+        .then(node => {
+            
+            if(verbose) {
+                let server = toolbox.getNode(node);
+                console.log(`Successfully connected to node: ${server}`);
+            }
+            
+            let commands = [];//ARKCommands.prepareGetDelegate(cmd.status, cmd.fees, cmd.config, node, verbose);
+            
+            // Execute the commands
+            Promise.all(commands)
+            .then(() => {
+                toolbox.showData(ARKCommands.output, format, node);
+            })
+            .catch(error => {
+                throw error;
+            });
+        })
+        .catch(error => {
+            process.exitCode = 1;
+            console.log(error);
+        });
+    }
+);
     
-
 // Get the node information
 ARKCLI.command('node <node>')
-    .description('Get the data for the <node>.');
+    .description('Get the data for the <node>.')
+    .option('-n, --network <network>', 'The network to query [mainnet|devnet]', 'mainnet')
+    .option('-c, --node <node>', 'Connect directly to a node on <node>.')
+    .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
+    .option('-v, --verbose', 'Show verbose logging')
+    .action( (node, cmd) => {
+        let verbose = cmd.verbose ? true : false;
+        let network = cmd.network ? cmd.network : 'mainnet';
+        let format = cmd.format ? cmd.format : "json";
+        let nodeURI = cmd.node ? cmd.node : false;
+        
+        // First Connect to the network
+        ARKNetwork.connectBlockchain(network, nodeURI, verbose)
+        .then(node => {
+            
+            if(verbose) {
+                let server = toolbox.getNode(node);
+                console.log(`Successfully connected to node: ${server}`);
+            }
+            
+            let commands = [];//ARKCommands.prepareGetNode(cmd.status, cmd.fees, cmd.config, node, verbose);
+            
+            // Execute the commands
+            Promise.all(commands)
+            .then(() => {
+                toolbox.showData(ARKCommands.output, format, node);
+            })
+            .catch(error => {
+                throw error;
+            });
+        })
+        .catch(error => {
+            process.exitCode = 1;
+            console.log(error);
+        });
+    }
+);
+    
+// Get transaction information
+ARKCLI.command('transaction <transaction>')
+    .description('Get the data for <transaction>.')
+    .option('-n, --network <network>', 'The network to query [mainnet|devnet]', 'mainnet')
+    .option('-c, --node <node>', 'Connect directly to a node on <node>.')
+    .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
+    .option('-v, --verbose', 'Show verbose logging')
+    .action( (transaction, cmd) => {
+        let verbose = cmd.verbose ? true : false;
+        let network = cmd.network ? cmd.network : 'mainnet';
+        let format = cmd.format ? cmd.format : "json";
+        let nodeURI = cmd.node ? cmd.node : false;
+        
+        // First Connect to the network
+        ARKNetwork.connectBlockchain(network, nodeURI, verbose)
+        .then(node => {
+            
+            if(verbose) {
+                let server = toolbox.getNode(node);
+                console.log(`Successfully connected to node: ${server}`);
+            }
+            
+            let commands = [];//ARKCommands.prepareGetTransaction(cmd.status, cmd.fees, cmd.config, node, verbose);
+            
+            // Execute the commands
+            Promise.all(commands)
+            .then(() => {
+                toolbox.showData(ARKCommands.output, format, node);
+            })
+            .catch(error => {
+                throw error;
+            });
+        })
+        .catch(error => {
+            process.exitCode = 1;
+            console.log(error);
+        });
+    }
+);
     
 // Post a transaction
-ARKCLI.command('transaction')
-    .description('Post a transaction to the blockchain.');  
+ARKCLI.command('Send <amount> <to> <from>')
+    .description('Post a transaction to the blockchain.')
+    .option('-n, --network <network>', 'The network to post to [mainnet|devnet]', 'mainnet')
+    .option('-c, --node <node>', 'Connect directly to a node on <node>.')
+    .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
+    .option('-v, --verbose', 'Show verbose logging')
     
+// Vote for a delegate
+ARKCLI.command('vote <delegate> <from>')
+    .description('Vote for a delegate.')
+    .option('-n, --network <network>', 'The network to post to [mainnet|devnet]', 'mainnet')
+    .option('-c, --node <node>', 'Connect directly to a node on <node>.')
+    .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
+    .option('-v, --verbose', 'Show verbose logging')
+
+// Unvote for a delegate
+ARKCLI.command('unvote <from>')
+    .description('Unvote delegate.')
+    .option('-n, --network <network>', 'The network to post to [mainnet|devnet]', 'mainnet')
+    .option('-c, --node <node>', 'Connect directly to a node on <node>.')
+    .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
+    .option('-v, --verbose', 'Show verbose logging')
+
+*/    
 // Start a terminal
 // Get the node information
 // TODO decide if we should split this to a separate branch
