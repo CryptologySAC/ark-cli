@@ -128,6 +128,33 @@ async function getFromNode(options) {
 }
 
 /**
+ * @dev     Connect to an ARK node and POST a transaction
+ * @param   {json} transaction A valid transaction.
+ * @return  {json} result with transactionids.
+ */ 
+async function postToNode(transaction, node){
+    let command = `/peer/transactions`;
+    let options = prepareRequestOptions(node, command);  
+    options.method = 'POST';
+    options.body = {'transactions':[transaction]};
+    options.json = true;
+
+    try {
+        let body = await request(options);
+        if ( !body.hasOwnProperty('success') || body.success != true) {
+            let error = body.hasOwnProperty('error') && body.error ? body.error : "Couldn't post transaction to node.";  
+            throw error;
+        } 
+        delete body.success;
+        console.log(body);
+        return body;
+    }
+    catch(error) {
+        throw error;
+    }
+}
+
+/**
  * @dev Return the configuration of the network
  * @param {json} node The node to poll for the data.
  * @return {json} with network configuration.
@@ -247,3 +274,4 @@ module.exports.getNetworkFeesFromNode = getNetworkFeesFromNode;
 module.exports.accountGetPublicKey = accountGetPublicKey;
 module.exports.accountGetDelegate = accountGetDelegate;
 module.exports.getActiveNodes = getActiveNodes;
+module.exports.postToNode = postToNode;

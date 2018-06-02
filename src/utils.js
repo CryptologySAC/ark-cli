@@ -1,5 +1,6 @@
 "use strict";
 const Table = require('ascii-table');
+const ARKUnits = 100000000;
 
 function getNode(node) {
     let uri = "https://node1.arknet.cloud:4001";
@@ -135,9 +136,52 @@ function getAccountTable(data, node) {
 }
 
 function formatBalance(amount, symbol) {
-    let balance = amount / 100000000;
+    let balance = amount / ARKUnits;
     return symbol + balance;
 } 
 
+function inputToValue(amount) {
+    
+    if (amount == 0) {
+        throw RangeError("Please enter a valid amount.");
+    }
+    
+    try {
+        amount = formatNumberFloat(amount);
+        let value = parseInt(amount *ARKUnits, 10);
+    
+        if (parseFloat(value)/ARKUnits != amount ) {
+            throw new RangeError("Amount is too large, causing an overflow.");
+        }
+        return value;
+    }
+    catch(error) {
+        throw error;
+    }
+        
+}
+
+function formatNumberFloat(number) {
+    
+    // Test if the number is formatted internationally
+    // Eg 1.5 vs 1,5
+    let commas = number.toString().split(",").length - 1;
+    let dots = number.toString().split(".").length - 1;
+    
+    if(commas === 0 && ( dots === 0 || dots === 1)) {
+        // All good
+        return parseFloat(number);
+    }
+    
+    if(commas === 1 && dots === 0) {
+        // International number format
+        return parseFloat(number.toString().replace(/[,]/, "."));
+    }
+    
+    // Always wrong
+    throw new RangeError("Amount formatted incorrectly. Correct <amount> format examples: 10, 10.4, 10000, 10000.4");
+}
+
 module.exports.showData = showData;
 module.exports.getNode = getNode;
+module.exports.inputToValue = inputToValue;

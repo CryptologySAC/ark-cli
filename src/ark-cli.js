@@ -4,6 +4,7 @@ const ARKNetwork = require('./network.js');
 const ARKCommands = require('./ark-commands.js');
 const ARKTerm = require('./ark-term.js');
 const toolbox = require('./utils.js');
+const prompt = require('prompt');
 
 ARKCLI.version('0.0.1');
 
@@ -107,7 +108,66 @@ ARKCLI.command('blockchain')
         });
     }
 );
-  
+
+// Post a transaction to send <amount> from <sender> to <receiver>
+ARKCLI.command('send <amount> <receiver>')
+    .description('Post a transaction to send <amount> to <receiver>.  <amount> format examples: 10, 10.4, 10000, 10000.4')
+    .option('-p, --pass <pass>', 'The passphrase for your address <"word1 word2 ...word12">. Will be prompted if not entered here.' )
+    .option('-s, --smartbridge <smartbridge>', 'The information to send in the vendor field')
+    .option('-n, --network <network>', 'The network to post to [mainnet|devnet]', 'mainnet')
+    .option('-c, --node <node>', 'Connect directly to a node on <node>.')
+    .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
+    .option('-v, --verbose', 'Show verbose logging')
+    .action((amount, receiver, cmd) => {
+        let verbose = cmd.verbose ? true : false;
+        let network = cmd.network ? cmd.network : 'mainnet';
+        let format = cmd.format ? cmd.format : "json";
+        let nodeURI = cmd.node ? cmd.node : false;
+        let seed = cmd.pass ? cmd.pass.toString() : null; // it's passed as an object, but we need a string for arkjs.crypto.getkeys();
+        let smartbridge = cmd.smartbridge ? cmd.smartbridge.toString() : null;
+        
+        try {
+            amount = toolbox.inputToValue(amount);
+        
+        }
+        catch(error) {
+            console.log(error.toString());
+            return;
+        }
+        
+        // First Connect to the network
+        ARKNetwork.connectBlockchain(network, nodeURI, verbose)
+        .then(async node => {
+            
+            if(verbose) {
+                let server = toolbox.getNode(node);
+                console.log(`Successfully connected to node: ${server}`);
+            }
+                
+            try {
+                // Prepare transaction
+                let sender = await ARKCommands.getAccountFromSeed(seed, node.network.version);
+                let transaction = ARKCommands.createTransaction(sender, receiver, amount, smartbridge);
+                let transactionId = await ARKCommands.postToNode(transaction, node);
+
+                return Promise.resolve(transactionId);
+            } 
+            catch (error) {
+                return Promise.reject(error);
+            }
+        })
+        .then(transactionId => {
+            //TODO output in json/table
+            console.log(JSON.stringify(transactionId));                
+            console.log(`TransactionId: ${transactionId.transactionIds[0]}`);
+        })
+        .catch(error => {
+            console.log(error.toString());
+            process.exitCode = 1;
+        });
+    }
+);
+
 
 // Get the block information
 /* TODO
@@ -271,13 +331,7 @@ ARKCLI.command('transaction <transaction>')
     }
 );
     
-// Post a transaction
-ARKCLI.command('Send <amount> <to> <from>')
-    .description('Post a transaction to the blockchain.')
-    .option('-n, --network <network>', 'The network to post to [mainnet|devnet]', 'mainnet')
-    .option('-c, --node <node>', 'Connect directly to a node on <node>.')
-    .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
-    .option('-v, --verbose', 'Show verbose logging')
+
     
 // Vote for a delegate
 ARKCLI.command('vote <delegate> <from>')

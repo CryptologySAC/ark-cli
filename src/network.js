@@ -77,7 +77,7 @@ async function selectPeer(network, verbose) {
         }
         
         // Sort Nodes by height and delay
-        sortedPeers.sort((a, b) => parseInt(b.height, 10) - parseInt(a.height, 10) || parseInt(a.delay, 10) - parseInt(b.delay,10));
+        sortedPeers.sort((a, b) => parseInt(b.height, 10) - parseInt(a.height, 10));// || parseInt(a.delay, 10) - parseInt(b.delay,10));
         
         // Test if the selected node actually works
         return await testNode(sortedPeers, verbose);
@@ -120,7 +120,7 @@ async function testNode(sortedPeers, verbose) {
             version: '1.0.0',
             port:1
         },
-        timeout: 1000
+        timeout: 5000
     }; 
     
     try {

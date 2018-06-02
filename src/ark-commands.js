@@ -1,6 +1,8 @@
 "use strict";
 const ARKAPI = require('./ark-api-v1.js');
 const merge = require('deepmerge');
+const arkjs = require('arkjs');
+const arkjsnetworks = require('arkjs/lib/networks.js');
 const ARKCommands = {'output':{}};
 
 /**
@@ -273,6 +275,33 @@ function prepareGetBlockchain(status, fees, config, node, verbose) {
     return commands;
 }
 
+function getAccountFromSeed(seed, networkVersion){
+    
+    arkjs.crypto.setNetworkVersion(networkVersion);
+
+    let keys = arkjs.crypto.getKeys(seed);
+    let publicKey = keys.publicKey;
+    let address = arkjs.crypto.getAddress(publicKey);
+    
+    let account = {
+        "address": address,
+        "publicKey": publicKey,
+        "seed": seed,
+        "networkVersion": networkVersion
+    };
+    return account;
+}
+
+function createTransaction(sender, receiver, amount, vendorfield) {
+    arkjs.crypto.setNetworkVersion(sender.networkVersion);
+    let transaction = arkjs.transaction.createTransaction(receiver, amount, vendorfield, sender.seed);
+    return transaction;
+}
+
+async function postToNode(transaction, node){
+    return await ARKAPI.postToNode(transaction, node);
+}
+
 
 module.exports = ARKCommands;
 module.exports.getAccount = getAccount;
@@ -284,3 +313,6 @@ module.exports.blockchainGetConfig = blockchainGetConfig;
 module.exports.blockchainGetFees = blockchainGetFees;
 module.exports.prepareGetAccount = prepareGetAccount;
 module.exports.prepareGetBlockchain = prepareGetBlockchain;
+module.exports.getAccountFromSeed = getAccountFromSeed;
+module.exports.createTransaction = createTransaction;
+module.exports.postToNode = postToNode;
