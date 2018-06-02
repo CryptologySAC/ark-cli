@@ -135,6 +135,8 @@ ARKCLI.command('send <amount> <receiver>')
             return;
         }
         
+        // TODO prompt for seed.
+        
         // First Connect to the network
         ARKNetwork.connectBlockchain(network, nodeURI, verbose)
         .then(async node => {
