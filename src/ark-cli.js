@@ -19,22 +19,23 @@ ARKCLI.command('account <address>')
     .option('-c, --node <node>', 'Connect directly to a node on <node>.')
     .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
     .option('-v, --verbose', 'Show verbose logging')
-    .action( (address, cmd) => {
+    .action( async (address, cmd) => {
         
         let verbose = cmd.verbose ? true : false;
         let network = cmd.network ? cmd.network : 'mainnet';
         let format = cmd.format ? cmd.format : "json";
         let nodeURI = cmd.node ? cmd.node : false;
         
-        // Default to getting account information.
+        // Default to getting account + delegate information.
         if (!cmd.balance && !cmd.key && !cmd.delegate) {
-            cmd.account = true;
+            cmd.account = true; 
+            cmd.delegate = true;
         }
         
-        // First Connect to the network
-        ARKNetwork.connectBlockchain(network, nodeURI, verbose)
-        .then(node => {
-            
+        try {
+            // First Connect to the network
+            let node = await ARKNetwork.connectBlockchain(network, nodeURI, verbose);
+        
             if(verbose) {
                 let server = toolbox.getNode(node);
                 console.log(`Successfully connected to node: ${server}`);
@@ -43,18 +44,21 @@ ARKCLI.command('account <address>')
             let commands = ARKCommands.prepareGetAccount(cmd.account, cmd.balance, cmd.key, cmd.delegate, address, node, verbose);
             
             // Execute the commands
-            Promise.all(commands)
+            return await Promise.all(commands)
             .then(() => {
                 toolbox.showData(ARKCommands.output, format, node);
+                return Promise.resolve();
             })
             .catch(error => {
-                throw error;
+                // Error in Promise.all: Should never happen.
+                return Promise.reject(error);
             });
-        })
-        .catch(error => {
+        }
+        catch(error){
+            // Error connecting to network
             process.exitCode = 1;
             console.log(error);
-        });
+        }
     }
 );
     
@@ -69,15 +73,15 @@ ARKCLI.command('blockchain')
     .option('-c, --node <node>', 'Connect directly to a node on <node>.')
     .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
     .option('-v, --verbose', 'Show verbose logging')
-    .action(cmd => {
+    .action( async cmd => {
         let verbose = cmd.verbose ? true : false;
         let network = cmd.network ? cmd.network : 'mainnet';
         let format = cmd.format ? cmd.format : "json";
         let nodeURI = cmd.node ? cmd.node : false;
         
-        // First Connect to the network
-        ARKNetwork.connectBlockchain(network, nodeURI, verbose)
-        .then(node => {
+        try {
+            // First Connect to the network
+            let node = await ARKNetwork.connectBlockchain(network, nodeURI, verbose);
             
             if(verbose) {
                 let server = toolbox.getNode(node);
@@ -94,18 +98,20 @@ ARKCLI.command('blockchain')
             let commands = ARKCommands.prepareGetBlockchain(cmd.status, cmd.fees, cmd.config, node, verbose);
             
             // Execute the commands
-            Promise.all(commands)
+            return await Promise.all(commands)
             .then(() => {
                 toolbox.showData(ARKCommands.output, format, node);
+                return Promise.resolve();
             })
             .catch(error => {
-                throw error;
+                // Error in Promise.all: Should never happen.
+                return Promise.reject(error);
             });
-        })
-        .catch(error => {
+        }
+        catch(error) {
             process.exitCode = 1;
             console.log(error);
-        });
+        }
     }
 );
 
@@ -118,7 +124,7 @@ ARKCLI.command('send <amount> <receiver>')
     .option('-c, --node <node>', 'Connect directly to a node on <node>.')
     .option('-f, --format <format>', 'Specify how to format the output [json|table]', 'json')
     .option('-v, --verbose', 'Show verbose logging')
-    .action((amount, receiver, cmd) => {
+    .action( async (amount, receiver, cmd) => {
         let verbose = cmd.verbose ? true : false;
         let network = cmd.network ? cmd.network : 'mainnet';
         let format = cmd.format ? cmd.format : "json";
@@ -129,44 +135,33 @@ ARKCLI.command('send <amount> <receiver>')
         try {
             amount = toolbox.inputToValue(amount);
         
-        }
-        catch(error) {
-            console.log(error.toString());
-            return;
-        }
         
-        // TODO prompt for seed.
+            // TODO prompt for seed/multisignature/second passphrase/ledger/etc.
+            // TODO Check smartbridge input for max length
         
-        // First Connect to the network
-        ARKNetwork.connectBlockchain(network, nodeURI, verbose)
-        .then(async node => {
+            // First Connect to the network
+            let node = await ARKNetwork.connectBlockchain(network, nodeURI, verbose)
             
             if(verbose) {
                 let server = toolbox.getNode(node);
                 console.log(`Successfully connected to node: ${server}`);
             }
                 
-            try {
-                // Prepare transaction
-                let sender = await ARKCommands.getAccountFromSeed(seed, node.network.version);
-                let transaction = ARKCommands.createTransaction(sender, receiver, amount, smartbridge);
-                let transactionId = await ARKCommands.postToNode(transaction, node);
+            // Prepare transaction
+            let sender = ARKCommands.getAccountFromSeed(seed, node.network.version);
+            let transaction = ARKCommands.createTransaction(sender, receiver, amount, smartbridge);
+                
+            // Post transaction
+            let transactionId = await ARKCommands.postToNode(transaction, node);
 
-                return Promise.resolve(transactionId);
-            } 
-            catch (error) {
-                return Promise.reject(error);
-            }
-        })
-        .then(transactionId => {
             //TODO output in json/table
             console.log(JSON.stringify(transactionId));                
             console.log(`TransactionId: ${transactionId.transactionIds[0]}`);
-        })
-        .catch(error => {
+        }
+        catch(error) {
             console.log(error.toString());
             process.exitCode = 1;
-        });
+        }
     }
 );
 
