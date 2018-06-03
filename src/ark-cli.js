@@ -107,7 +107,7 @@ ARKCLI.command('blockchain')
 // Post a transaction to send <amount> from <sender> to <receiver>
 ARKCLI.command('send <amount> <receiver>')
     .description('Post a transaction to send <amount> to <receiver>.  <amount> format examples: 10, 10.4, 10000, 10000.4')
-    .option('-p, --pass [pass]', 'The passphrase for your address <"word1 word2 ...word12">. Will be prompted if not entered here.' )
+    .option('-p, --pass [passphrase]', 'The passphrase for your address <"word1 word2 ...word12">. Will be prompted if not entered here.' )
     .option('-s, --smartbridge [smartbridge]', 'The information to send in the SmartBridge field. Will be prompted if not entered here.')
     .option('-n, --network <network>', 'The network to post to [mainnet|devnet]', 'mainnet')
     .option('-c, --node <node>', 'Connect directly to a node on <node>.')
@@ -118,29 +118,31 @@ ARKCLI.command('send <amount> <receiver>')
         let network = cmd.network ? cmd.network : 'mainnet';
         let format = cmd.format ? cmd.format : "json";
         let nodeURI = cmd.node ? cmd.node : false;
-        let seed = cmd.pass ? cmd.pass.toString() : null; // it's passed as an object, but we need a string for arkjs.crypto.getkeys();
-        let smartbridge = cmd.smartbridge ? (cmd.smartbridge === true ? true : cmd.smartbridge.toString()) : null;
+        let passphrase = cmd.pass && cmd.pass !== true ? cmd.pass.toString() : null; // it's === true when --pass without a seed , so we prompt for it below then. 
+        let smartbridge = cmd.smartbridge  && cmd.smartbridge !== true ? cmd.smartbridge.toString() : null;
         
         try {
             amount = toolbox.inputToValue(amount);
             
-            if(smartbridge === true) {
-                console.log("SmartBridge true");
-                let results = await toolbox.getPrompt(false, smartbridge);
+            if(cmd.smartbridge === true || cmd.pass === true ) {
+                let results = await toolbox.getPrompt(cmd.pass, cmd.smartbridge);
                 
                 if(results.hasOwnProperty('smartbridge')) {
-                    smartbridge = results.smartbridge;
+                    smartbridge = results.smartbridge.toString();
+                }
+                
+                if(results.hasOwnProperty('passphrase')) {
+                    passphrase = results.passphrase.toString();
                 }
             }
         
-            // TODO prompt for seed/multisignature/second passphrase/ledger/etc.
-            // TODO Check smartbridge input for max length
+            // TODO ledger
         
             // First Connect to the network
             let node = await ARKNetwork.connectBlockchain(network, nodeURI, verbose);
                 
             // Prepare transaction
-            let sender = ARKCommands.getAccountFromSeed(seed, node.network.version);
+            let sender = ARKCommands.getAccountFromSeed(passphrase, node.network.version);
             let transaction = ARKCommands.createTransaction(sender, receiver, amount, smartbridge);
                 
             // Post transaction

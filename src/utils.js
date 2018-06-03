@@ -184,8 +184,8 @@ function formatNumberFloat(number) {
     throw new RangeError("Amount formatted incorrectly. Correct <amount> format examples: 10, 10.4, 10000, 10000.4");
 }
 
-async function getPrompt(pass, smartbridge) {
-    if (!pass && !smartbridge) {
+async function getPrompt(passphrase, smartbridge) {
+    if (!passphrase && !smartbridge) {
         return null;
     }
                 
