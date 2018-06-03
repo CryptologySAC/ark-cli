@@ -132,7 +132,7 @@ async function testNode(sortedPeers, verbose) {
         peer.network = await ARKAPI.getNetworkConfigFromNode(peer);
         
         if(verbose) {
-            console.log(`Node selected: ${peer.ip}:${peer.port}, height: ${peer.height}, delay: ${peer.delay}`);
+            console.log(`Blockchain connected through node ${peer.ip}:${peer.port}, height: ${peer.height}, delay: ${peer.delay}.`);
         }
         
         return peer;

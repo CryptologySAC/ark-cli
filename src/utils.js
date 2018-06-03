@@ -1,6 +1,8 @@
 "use strict";
 const Table = require('ascii-table');
+const prompt = require('prompt');
 const ARKUnits = 100000000;
+
 
 function getNode(node) {
     let uri = "https://node1.arknet.cloud:4001";
@@ -182,6 +184,43 @@ function formatNumberFloat(number) {
     throw new RangeError("Amount formatted incorrectly. Correct <amount> format examples: 10, 10.4, 10000, 10000.4");
 }
 
+async function getPrompt(pass, smartbridge) {
+    if (!pass && !smartbridge) {
+        return null;
+    }
+                
+    let schema = {
+        'properties': {}
+    };
+    
+    if(smartbridge) {
+        schema.properties.smartbridge = {
+            description: 'Enter your SmartBridge message',
+            type: 'string', 
+            message: 'SmartBridge must be a string of no more than 64 characters.', // TODO AIP-11 255 chars
+            default: 'Ark-CLI',
+            required: true ,
+            conform: function (value) {
+                if (value.length > 64) {
+                    return false;
+                }
+                return true;
+            }
+        };
+    }
+    
+    return new Promise((resolve, reject) => {
+        prompt.start();
+        prompt.get(schema, (err, result) => {
+            if(err) {
+                reject(err);
+            }
+            return resolve(result); 
+        });
+    });
+}
+
 module.exports.showData = showData;
 module.exports.getNode = getNode;
 module.exports.inputToValue = inputToValue;
+module.exports.getPrompt = getPrompt;
